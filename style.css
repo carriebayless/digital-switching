@@ -1,0 +1,1120 @@
+
+/* push trigger: 8/5 5:30 PM */
+
+:root{
+  --bg: #f4f7f6;
+  --surface: #ffffff;
+  --text: #0f172a;
+  --muted: #475569;
+  --border: #e5e7eb;
+  --primary: #00047e;
+  --primary-600: #000261;
+  --danger: #e11d48;
+  --warning: #f59e0b;
+  --success: #10b981;
+  --brand: #3467eb;      /* matches .nav-button background */
+  --brand-600: #284bb7;  /* matches .nav-button hover */
+
+  --radius: 12px;
+  --radius-sm: 8px;
+  --shadow-1: 0 1px 2px rgba(0,0,0,.04), 0 8px 24px rgba(16,24,40,.08);
+  --shadow-2: 0 1px 3px rgba(0,0,0,.06), 0 10px 30px rgba(16,24,40,.12);
+  --control-h: 40px; /* unified height for tabs/chips */
+}
+
+/* Utility components */
+.card{ background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow-1); padding:20px; }
+
+/* Subtle highlight for live-updated cells */
+.pulse{ animation:pulse-bg .9s ease; }
+@keyframes pulse-bg{ 0%{ background:#fff9c2; } 100%{ background:transparent; } }
+
+/* Empty-state helper */
+.empty{ padding:16px; text-align:center; color:var(--muted); border:1px dashed var(--border); border-radius:var(--radius); background:#fcfcfd; }
+
+/* Accessible focus */
+:focus-visible{ outline:3px solid #93c5fd; outline-offset:2px; }
+
+/* Overlay helper class for smoother show/hide */
+.overlay.show{ display:flex !important; opacity:1 !important; }
+
+/* Devices collapse indicator (keeps dot visible when closed) */
+#devices-collapse-icon{ display:none; margin-left:6px; font-size:10px; line-height:1; color:#0b3d91; }
+#devices-details:not([open]) #devices-collapse-icon{ display:inline-flex; }
+
+body {
+    font-family: 'Roboto', sans-serif; /* Changed from Arial for consistency with previous setup */
+    margin: 0;
+    padding: 20px;
+    background-color: #f4f7f6; /* Slightly softer background */
+    color: #00047e;
+    line-height: 1.6;
+}
+
+.header-container { /* Added container for H1 and status bar */
+    text-align: center;
+    margin-bottom: 20px;
+    padding: 15px; /* This padding adds space inside the container */
+    background-color: #ffffff;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+/* START MODIFIED CODE: Logo Styling */
+.site-logo {
+    display: block; /* Ensures it takes up full width for centering */
+    margin: 0 auto 0 auto; /* CHANGED: Set bottom margin to 0 */
+    max-width: 200px; /* Adjust as needed - controls the max size of your logo */
+    height: auto; /* Maintains aspect ratio */
+    padding-top: 5px; /* Little space from the top edge of header-container */
+}
+/* END MODIFIED CODE */
+
+/* START MODIFIED CODE: H1 Styling */
+h1 {
+    color: #00047e; /* Match primary blue */
+    font-size: 2.5rem;
+    margin-top: 2px; /* ADDED/CHANGED: Set a small top margin here */
+    margin-bottom: 10px; /* Keep this for spacing below the h1 */
+}
+/* END MODIFIED CODE */
+
+#grade-tabs {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap; /* Allow tabs to wrap on smaller screens */
+    gap: 10px;
+    margin-bottom: 25px;
+    padding: 10px;
+    background-color: #ffffff;
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+}
+
+.grade-tab {
+    background-color: #e0e7ff; /* Light blue */
+    color: #00047e; /* Primary blue */
+    border: 2px solid #00047e;
+    padding: 10px 20px;
+    border-radius: 25px; /* More rounded */
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    flex-grow: 1; /* Allow tabs to grow */
+    text-align: center;
+    min-width: 100px; /* Minimum width for tabs */
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+.grade-tab:hover:not(.active) {
+    background-color: #c6d3ff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.grade-tab.active {
+    background-color: #00047e; /* Active tab is primary blue */
+    color: #ffffff;
+    transform: translateY(-1px);
+    box-shadow: 0 3px 6px rgba(0,0,0,0.15);
+}
+
+.grade-section { /* Container for student lists per grade */
+    background-color: #ffffff;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    margin-bottom: 20px;
+}
+
+.student-name {
+    background-color: #e8f0fe; /* Light blue */
+    color: #00047e;
+    border: 1px solid #cce0ff;
+    padding: 10px 15px;
+    border-radius: 8px;
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.2s, box-shadow 0.2s;
+    text-align: center;
+    flex: 1 1 calc(50% - 10px); /* Two columns with some gap */
+    box-sizing: border-box;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.student-name:hover {
+    background-color: #d0e0ff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+/* --- Overlay Styles --- */
+.overlay {
+    display: none; /* Hidden by default, controlled by JS */
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw; /* Use vw/vh for full screen */
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.7); /* Dark background with opacity */
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    opacity: 0; /* For fade-in/out */
+    transition: opacity 0.3s ease;
+    box-sizing: border-box;
+    padding: 1rem;
+    overflow-y: auto; /* Enable scrolling for content if it overflows */
+}
+
+.overlay-content { /* Renamed from .modal for clarity, applied to the inner div */
+    background-color: #ffffff;
+    padding: 25px;
+    border-radius: 15px;
+    text-align: center;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+    width: 90%;
+    max-width: 600px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+#selected-student-name {
+    color: #00047e;
+    font-size: 1.8rem;
+    margin-bottom: 15px;
+}
+
+.overlay-content p {
+    font-size: 1.1rem;
+    color: #555;
+    margin-bottom: 20px;
+}
+
+.room-buttons {
+    display: flex;
+    flex-direction: column; /* Buttons stack vertically */
+    width: 100%;
+    gap: 10px; /* Space between buttons */
+}
+
+/* Room button styling is mostly in JS for dynamic colors */
+.room-buttons button {
+    min-height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#close-selection {
+    margin-top: 20px;
+    /* Specific styling for the cancel button */
+    border: 2px solid red !important; /* !important to override other styles */
+    background: #ffe6e6 !important;
+    color: red !important;
+    font-weight: bold !important;
+}
+
+/* --- Responsive Adjustments --- */
+@media (max-width: 768px) {
+    h1 {
+        font-size: 2rem;
+    }
+
+    .grade-tab {
+        padding: 8px 15px;
+        font-size: 1rem;
+        min-width: 80px;
+    }
+
+    .student-name {
+        font-size: 1.1rem;
+        padding: 8px 12px;
+    }
+
+    .overlay-content {
+        padding: 20px;
+        max-width: 95%;
+    }
+
+    #selected-student-name {
+        font-size: 1.5rem;
+    }
+
+    .overlay-content p {
+        font-size: 1rem;
+    }
+}
+
+@media (max-width: 480px) {
+    body {
+        padding: 10px;
+    }
+
+    h1 {
+        font-size: 1.8rem;
+    }
+
+    #grade-tabs {
+        flex-direction: column; /* Stack tabs on very small screens */
+    }
+
+    .grade-tab {
+        width: 100%;
+        margin-bottom: 5px;
+    }
+
+    .student-name {
+        flex: 1 1 100%; /* Single column on very small screens */
+    }
+
+    .overlay-content {
+        padding: 15px;
+    }
+
+    .room-buttons button {
+        font-size: 1rem;
+        padding: 0.4rem 1rem;
+    }
+}
+
+/* --- STATIC Room Status Bar Styles (NEW) --- */
+.room-status-bar {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px; /* Space between status items */
+    margin-top: 15px;
+    padding: 10px;
+    background-color: #eaf4ff; /* Lighter background for the status bar */
+    border-radius: 8px;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.1); /* Subtle inner shadow */
+}
+
+.room-status {
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 0.95rem;
+    font-weight: bold;
+    color: #00047e; /* Default text color, will be overridden by JS */
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    white-space: nowrap; /* Prevent text from wrapping */
+    overflow: hidden; /* Hide overflow */
+    text-overflow: ellipsis; /* Add ellipsis */
+}
+
+/* Add this to your style.css file */
+.highlight {
+    background-color: #FFFF99; /* A soft yellow for highlighting */
+    color: #333;               /* Darker text for readability against yellow */
+    font-weight: bold;         /* Make the text bold */
+    padding: 2px 4px;          /* Small padding to make the highlight visible */
+    border-radius: 3px;        /* Slightly rounded corners for the highlight */
+}
+
+
+.roster-table {
+  margin: 2rem auto;
+  border-collapse: collapse;
+  width: 90%;
+  max-width: 1200px;
+  background: #fff;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+  font-size: 1rem;
+}
+
+.roster-table thead {
+  background: #f5f6fa;
+}
+
+.roster-table th, .roster-table td {
+  border: 1px solid #dee2e6;
+  padding: 0.75rem 1rem;
+  text-align: left;
+  position: relative;
+}
+
+.roster-table th {
+  font-weight: bold;
+  background: #f0f2f5;
+}
+
+.roster-table tbody tr:nth-child(even) {
+  background: #fafbfc;
+}
+
+.roster-table tbody tr:hover {
+  background: #eef1f7;
+}
+
+.filter-icon-btn {
+  background: none;
+  border: none;
+  padding: 0 4px;
+  cursor: pointer;
+  font-size: 1em;
+  color: #6c757d;
+  margin-left: 2px;
+}
+
+.filter-dropdown {
+  position: absolute;
+  top: 2.5rem;
+  left: 0;
+  background: #fff;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.10);
+  padding: 0.5rem;
+  z-index: 100;
+}
+
+.filter-dropdown input {
+  width: 120px;
+  padding: 0.3rem 0.5rem;
+  font-size: 1em;
+  border-radius: 4px;
+  border: 1px solid #bdbdbd;
+}
+
+.primary-action-btn {
+  padding: 0.6em 1.3em;
+  background: #3467eb;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 1.1em;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+  transition: background 0.15s;
+  margin: 0.5rem 0 1rem 0;
+}
+
+.primary-action-btn:hover, .primary-action-btn:focus {
+  background: #284bb7;
+}
+
+.btn-cancel-new {
+  padding: 2px 6px;
+  font-weight: bold;
+  font-size: 16px;
+  line-height: 1;
+  background-color: #dc3545;
+  border: none;
+  border-radius: 4px;
+  color: white;
+  cursor: pointer;
+  margin-left: 8px;
+  vertical-align: middle;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  transition: background-color 0.2s ease;
+}
+.btn-cancel-new:hover {
+  background-color: #c82333;
+}
+
+.nav-button {
+  font-size: 16px;
+  padding: 10px 20px;
+  border-radius: 6px;
+  background-color: #3467eb;
+  border: 1px solid #3467eb;
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.2s, box-shadow 0.2s;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+  margin-left: 0;
+}
+
+.nav-button:hover, .nav-button:focus {
+  background-color: #284bb7;
+  border: 1px solid #284bb7;
+  color: #fff;
+  outline: none;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+/* --- Roster Manager Specific Styles --- */
+.roster-manager-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.roster-manager-container h1 {
+  text-align: center;
+}
+
+.page-actions, #edit-controls {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.save-btn {
+  background-color: #28a745; /* Green */
+}
+.save-btn:hover {
+  background-color: #218838;
+}
+
+.discard-btn {
+  background-color: #dc3545; /* Red */
+}
+.discard-btn:hover {
+  background-color: #c82333;
+}
+
+.roster-table input, .roster-table select {
+  padding: 8px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.roster-table .input-name {
+  display: inline-block;
+  width: calc(50% - 4px);
+}
+
+.roster-table th .filter-select {
+  width: auto;
+  padding: 2px 5px;
+  font-size: 0.85em;
+  font-weight: normal;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background-color: #fff;
+  margin-left: 8px;
+}
+
+#nav-bar {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 10px;
+  background: #f9f9f9;
+  border-bottom: 1px solid #ccc;
+}
+
+/* --- Bulk Update Modal --- */
+.modal-container {
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background-color: rgba(0,0,0,0.5);
+  justify-content: center;
+  align-items: center;
+}
+
+.modal-content {
+  background-color: #fefefe;
+  margin: auto;
+  padding: 20px;
+  border: 1px solid #888;
+  width: 80%;
+  max-width: 600px;
+  border-radius: 10px;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+  text-align: center;
+}
+
+.bulk-update-prompt {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 20px 0;
+  flex-wrap: wrap;
+}
+
+.modal-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+/* --- Add Room Floating Button --- */
+#add-room-fab {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background-color: #007BFF;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 56px;
+  height: 56px;
+  font-size: 28px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  z-index: 1001;
+}
+
+#add-room-fab:hover {
+  background-color: #0056b3;
+}
+
+/* --- Add Room Modal Styles --- */
+#add-room-modal {
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0,0,0,0.5);
+  justify-content: center;
+  align-items: center;
+}
+
+#add-room-modal-content {
+  background-color: #fff;
+  padding: 25px;
+  border-radius: 12px;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+  width: 90%;
+  max-width: 500px;
+}
+
+#add-room-modal-content h2 {
+  margin-top: 0;
+}
+
+#add-room-modal-content form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+#add-room-modal-content input,
+#add-room-modal-content select {
+  padding: 10px;
+  font-size: 1rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+#add-room-modal-content .modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+#add-room-modal-content .modal-actions button {
+  padding: 10px 16px;
+  font-size: 1rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+#add-room-modal-content .modal-actions .cancel-btn {
+  background-color: #dc3545;
+  color: white;
+}
+
+#add-room-modal-content .modal-actions .add-btn {
+  background-color: #28a745;
+  color: white;
+}
+
+#room-table:not(.show-actions) th:nth-child(4),
+#room-table:not(.show-actions) td:nth-child(4) {
+  display: none;
+}
+
+/* Room actions buttons — visually align with roster manager */
+.rm-action-btn {
+  font-size: 12px;
+  line-height: 1;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid #cdd4da;
+  background: #f7f8fa;
+  cursor: pointer;
+  transition: background 0.15s ease, box-shadow 0.15s ease, transform 0.05s ease;
+}
+.rm-action-btn:hover { background: #eef1f4; }
+.rm-action-btn:active { transform: translateY(1px); }
+
+.rm-delete {
+  color: #8b0000;
+  border-color: #f1c0c0;
+  background: #fdecec;
+}
+.rm-delete:hover { background: #f9dada; }
+
+.rm-restore {
+  color: #0f5132;
+  border-color: #bcd9c9;
+  background: #eaf7f0;
+}
+.rm-restore:hover { background: #def1e8; }
+
+/* Loading state row */
+.loading-row td {
+  padding: 14px;
+  color: #666;
+  font-style: italic;
+}
+
+/* Keep actions column a stable width so content appears instantly */
+#room-table td.actions { min-width: 120px; text-align: right; }
+#room-table.show-actions th:nth-child(4) { min-width: 120px; }
+/* --- Session Tab Buttons (Supervisor) --- */
+.session-tab {
+  background-color: #f0f0f0;
+  color: #000;
+  border: 1px solid #ccc;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.session-tab:hover {
+  background-color: #e0e0e0;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.session-tab.active {
+  background-color: #007BFF;
+  color: #fff;
+  border-color: #007BFF;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.session-tab[disabled] {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* --- Unified overlay card styles (student & supervisor) --- */
+/* Ensure overlays always sit above other UI */
+.overlay { z-index: 10000; }
+
+/* Generic modal card used inside .overlay */
+.modal {
+  background: #ffffff;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 12px 30px rgba(0,0,0,.25);
+  width: min(720px, 92vw);
+  max-height: 80vh;
+  overflow: auto;
+}
+
+/* Room chooser button look (safe even if not used everywhere) */
+.room-choice {
+  width: 100%;
+  display: block;
+  padding: 14px 16px;
+  margin: 8px 0;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: #fff;
+  font-size: 1rem;
+  text-align: center;
+  cursor: pointer;
+}
+.room-choice:hover { background: #f6f7fb; }
+.room-choice:active { transform: translateY(1px); }
+.room-choice:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }
+
+/* Minor heading tweak for modal titles */
+#room-overlay-title { margin: 0 0 8px; color: var(--text); }
+/* --- Student UI polish: remove nested card look --- */
+#student-list.card{ background: transparent; border: 0; box-shadow: none; padding: 0; }
+#student-list .grade-section{ margin-top: 12px; }
+
+/* Make room status chips look like tags and play nicely with dynamic colors */
+.room-status{
+  border: 1px solid rgba(0,0,0,.06);
+  border-radius: 999px;
+  padding: 6px 10px;
+  box-shadow: none; /* let color read clearly */
+}
+.room-status .rs-icon{ margin-right: 6px; }
+
+/* Room chooser list spacing inside modal */
+#room-overlay-list{ margin-top: 8px; }
+
+/* Supervisor: upcoming color/icon controls */
+.room-color-picker{ width: 44px; height: 32px; padding: 0; border: 1px solid var(--border); border-radius: 6px; }
+.room-icon-select{ height: 34px; padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; background: #fff; }
+.room-name-wrap { display:flex; align-items:center; gap:8px; }
+.room-color-dot { width:12px; height:12px; border-radius:50%; border:1px solid rgba(0,0,0,.15); flex:0 0 auto; }
+.room-emoji { font-size:1.05rem; line-height:1; flex:0 0 auto; }
+
+/* Inline editor layout inside Actions cell */
+.room-inline-editor { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-top:8px; }
+.room-inline-editor .room-color-picker { width:44px; height:32px; padding:0; }
+.room-inline-editor .room-icon-select { width:5.5rem; text-align:center; height:34px; }
+
+/* Ensure Actions column hides when manage is off (extra safety alongside nth-child rule) */
+#room-table:not(.show-actions) td.actions { display:none; }
+#room-table.show-actions td.actions { display:table-cell; }
+/* --- Rooms actions polish --- */
+#room-table td.actions { vertical-align: middle; }
+#room-table.show-actions td.actions { text-align: right; }
+
+/* Make Save/Cancel look like compact chips (match delete/restore scale) */
+.save-room-style, .cancel-room-style {
+  font-size: 12px;
+  line-height: 1;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid #cdd4da;
+  background: #f7f8fa;
+  cursor: pointer;
+  transition: background 0.15s ease, box-shadow 0.15s ease, transform 0.05s ease;
+}
+.save-room-style:hover, .cancel-room-style:hover { background: #eef1f4; }
+.save-room-style:active, .cancel-room-style:active { transform: translateY(1px); }
+
+.save-room-style {
+  color: #0f5132;
+  border-color: #bcd9c9;
+  background: #eaf7f0;
+}
+.save-room-style:hover { background: #def1e8; }
+
+.cancel-room-style {
+  color: #374151;
+}
+
+/* Space actions/buttons inside the actions cell */
+#room-table td.actions .rm-action-btn { margin-left: 8px; }
+
+/* Name cell: avoid jumpiness and handle long names gracefully */
+.room-name-wrap { min-height: 20px; }
+.room-name-wrap span:last-child { max-width: 28ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Slightly larger emoji for visibility */
+.room-emoji { font-size: 1.15rem; }
+
+/* Neutral appearance for empty color (keep subtle ring) */
+.room-color-dot { background: transparent; }
+
+/* find-students — list styling */
+.grade-section {
+  background: #f6f7fb;
+  border-radius: 10px;
+  padding: 1rem;
+  margin: 1rem 0;
+}
+
+.grade-title {
+  margin: 0 0 .5rem;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #0b2a7c;
+}
+
+.name-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: .5rem;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.student-item {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  font-size: 1.1rem;
+}
+
+.student-checkbox {
+  width: 20px;
+  height: 20px;
+  accent-color: #1e88e5;
+  cursor: pointer;
+}
+
+/* Click-anywhere selection polish */
+.student-item{
+  cursor: pointer;
+  border-radius: 8px;
+  padding: 6px 8px;
+  transition: background-color .15s ease, box-shadow .15s ease;
+}
+.student-item:hover{ background:#eef4ff; }
+
+/* Row highlight when selected (relies on :has, supported on modern iPad/Chrome/Safari) */
+.student-item:has(.student-checkbox:checked){
+  background:#dbeafe; /* light blue */
+  box-shadow: inset 0 0 0 2px rgba(30,136,229,.35);
+}
+
+/* Make the checkbox hit area a bit friendlier on touch */
+.student-checkbox{ margin-right: 6px; }
+
+.hidden { display: none !important; }
+
+.highlight {
+  background: #ffec99;
+  padding: .05rem .25rem;
+  border-radius: 4px;
+}
+
+/* ---- Polished select styling (shared) ---- */
+select,
+.ds-select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background: #ffffff;
+  border: 1px solid var(--border, #d0d5dd);
+  border-radius: 8px;
+  padding: 8px 36px 8px 12px;
+  font-size: 14px;
+  line-height: 1.2;
+  box-shadow: inset 0 1.5px 3px rgba(0,0,0,0.06);
+  transition: box-shadow .15s ease, border-color .15s ease, background-color .15s ease;
+}
+select:focus,
+.ds-select:focus {
+  outline: none;
+  border-color: var(--brand, #0b57d0);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand, #0b57d0) 20%, transparent);
+}
+/* subtle chevron */
+select,
+.ds-select {
+  background-image:
+    linear-gradient(45deg, transparent 50%, #777 50%),
+    linear-gradient(135deg, #777 50%, transparent 50%),
+    linear-gradient(to right, transparent, transparent);
+  background-position:
+    calc(100% - 18px) calc(50% - 3px),
+    calc(100% - 12px) calc(50% - 3px),
+    calc(100% - 2.2em) 50%;
+  background-size: 6px 6px, 6px 6px, 1px 2.4em;
+  background-repeat: no-repeat;
+}
+
+/* Limit custom select width so the chip row breathes */
+.ds-select { max-width: 260px; }
+
+/* Summary chip row container (site select + time + totals) */
+.summary-card {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;          /* wrap on narrow screens */
+  gap: 48px;                /* generous spacing between the first items */
+  border: 1px solid var(--border, #d0d5dd);
+  border-radius: 8px;
+  padding: 15px;
+}
+
+/* inline placement inside summary card */
+.summary-card .site-inline {
+  display: flex;
+  align-items: center;
+  gap: 12px;             /* space between label and select */
+  margin-right: 28px;    /* EXTRA space before the next chip */
+}
+.summary-card .ds-select {
+  min-width: 240px;
+}
+
+/* --- Supervisor: chip row spacing & layout --- */
+#session-container > div {
+  display: flex;            /* ensure chip row is flex */
+  align-items: center;
+  flex-wrap: wrap;          /* wrap on small screens */
+  gap: 28px;                /* more space between the first two chips (and all items) */
+}
+
+/* Ensure the site select never crowds the next chip on narrow screens */
+@media (max-width: 900px) {
+  .summary-card .site-inline { margin-right: 18px; }
+}
+
+/* tighten on small screens */
+@media (max-width: 600px) {
+  .summary-card .ds-select { min-width: 180px; }
+}
+
+/* Student Finder: Filter badge */
+/* Student Finder: Filter badge */
+.filter-badge {
+  position: fixed;
+  bottom: 16px;
+  right: 16px;
+  z-index: 9999;
+
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);  /* match site radius */
+
+  background-color: var(--brand);   /* match nav-button */
+  color: #fff;
+  border: 1px solid var(--brand);
+
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1;
+
+  box-shadow: 0 1px 2px rgba(0,0,0,0.04); /* match nav-button base shadow */
+}
+
+/* Optional: dark mode or theme var support */
+@media (prefers-color-scheme: dark) {
+  .filter-badge {
+    background-color: var(--brand-600);
+    border-color: var(--brand-600);
+    box-shadow: 0 2px 10px rgba(0,0,0,0.35), inset 0 -1px 0 rgba(255,255,255,0.06);
+  }
+}
+/* ================= Supervisor Dashboard – Layout Tweaks ================= */
+/* Top nav container (if used on this page) */
+.top-nav {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+  background-color: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 10px;
+}
+
+/* Session tabs row */
+.session-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+/* Override base .session-tab to standardize height */
+.session-tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: var(--control-h);
+  line-height: 1;
+  padding: 0 16px; /* keep width comfortable */
+}
+
+/* Clear-all chip aligned with tabs */
+.clear-max-chip {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: var(--control-h);
+  padding: 0 18px;                    /* a bit wider */
+  border-radius: var(--radius-sm);
+  -webkit-appearance: none; appearance: none;
+  background: var(--brand);
+  border: 1px solid var(--brand);
+  color: #fff;
+  font-weight: 700;                    /* bolder */
+  font-size: 1rem;                     /* larger text */
+  box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+  cursor: pointer;
+  transition: background .15s ease, box-shadow .15s ease, transform .02s ease;
+}
+.clear-max-chip:hover,
+.clear-max-chip:focus { background: var(--brand-600); border-color: var(--brand-600); }
+.clear-max-chip:active { transform: translateY(1px); }
+.clear-max-chip:focus-visible { outline: none; box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 25%, transparent); }
+
+/* Summary row spacing + pill styling */
+.summary-row { display: flex; align-items: center; gap: 16px 24px; flex-wrap: wrap; }
+.summary-item { display: inline-flex; align-items: center; gap: 8px; }
+.summary-item.summary-pill {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+  height: var(--control-h);
+}
+.summary-label { font-weight: 600; color: var(--muted); }
+.summary-title { font-weight: 700; }
+.summary-value { font-weight: 700; color: var(--primary); }
+
+/* Make only the number pop inside summary pills */
+.summary-item.summary-pill .summary-title { color: var(--muted); }
+
+.summary-item.summary-pill .summary-value {
+  background: none;
+  color: var(--text);
+  padding: 0;
+  border-radius: 0;
+  line-height: 1.2;
+  font-weight: 800;          /* slightly bolder for emphasis */
+  font-size: 1.05rem;        /* a touch larger for readability */
+  letter-spacing: 0.2px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Make the time input blend into the pill */
+.summary-pill .summary-time-input {
+  border: none;
+  background: transparent;
+  height: auto; /* let OS render its control; pill keeps overall height */
+  padding: 0;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+
+/* Start Time pill styled like site but clearly editable */
+.summary-item.summary-pill.time-edit {
+  border-color: var(--border);
+  background: var(--surface);
+}
+.summary-item.summary-pill.time-edit:focus-within {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 20%, transparent);
+}
+/* Make the time input readable and obviously interactive */
+.summary-item.summary-pill.time-edit .summary-time-input {
+  /* Boxed input inside the pill */
+  height: 32px;                       /* slightly smaller than the pill */
+  min-width: 110px;
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: #fff;
+  color: var(--text);
+  font-size: 1rem;
+  font-weight: 600;                    /* readable but lighter than totals */
+  caret-color: var(--brand);
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.04);
+}
+.summary-item.summary-pill.time-edit .summary-time-input:focus {
+  outline: none;
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 18%, transparent), inset 0 1px 2px rgba(0,0,0,0.04);
+}
+.summary-item.summary-pill.time-edit .summary-time-input::-webkit-calendar-picker-indicator {
+  margin-right: 2px; /* align the clock icon a bit nicer */
+}

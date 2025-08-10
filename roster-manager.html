@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Student Roster Manager</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="nav-bar">
+    <button onclick="window.location.href='supervisor.html'" class="nav-button">Supervisor Dashboard</button>
+    <button onclick="window.location.href='find-students.html'" class="nav-button">Find Students</button>
+  </div>
+
+  <div class="roster-manager-container">
+    <h1>Student Roster Manager</h1>
+    
+    <!-- Main Page Actions -->
+    <div class="page-actions">
+      <button id="bulk-update-btn" class="primary-action-btn" aria-label="Bulk Update Students">Bulk Update</button>
+      <button id="edit-students-btn" class="primary-action-btn">Edit Students</button>
+      <button id="add-student-btn" class="primary-action-btn" style="display:none;" aria-label="Add New Student">+ Add Student</button>
+      <input type="file" id="csv-upload" accept=".csv" style="display:none;" aria-label="Upload CSV file"/>
+    </div>
+
+    <!-- Edit Mode Controls -->
+    <div id="edit-controls" style="display:none;">
+      <button id="save-changes-btn" class="primary-action-btn save-btn" aria-label="Save Changes">Save Changes</button>
+      <button id="discard-changes-btn" class="primary-action-btn discard-btn" aria-label="Discard Changes">Discard Changes</button>
+    </div>
+
+    <!-- Roster Table -->
+    <div id="roster-table-container">
+      <div class="loading-message">Loading student roster...</div>
+    </div>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.0/papaparse.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="roster-manager.js"></script>
+
+<!-- Bulk Update Modal -->
+<div id="bulk-update-modal" class="modal-container" style="display:none;">
+  <div class="modal-content">
+    <h2 id="bulk-update-title">Bulk Student Update</h2>
+    <p>Update a group of students from a CSV file.</p>
+    
+    <div class="bulk-update-prompt">
+      <span>Set</span>
+      <select id="bulk-update-field" class="filter-select">
+        <option value="site">Site</option>
+        <option value="summer_site">Summer Site</option>
+        <option value="non_school_day">Non-School Day</option>
+      </select>
+      <span>for all students in</span>
+      <input type="file" id="bulk-update-csv-upload" accept=".csv" required/>
+      <span>to</span>
+      <div id="bulk-update-value-container" style="display: inline-block;">
+        <!-- This will be populated by JS -->
+      </div>
+    </div>
+
+    <div class="modal-buttons">
+      <button id="bulk-update-submit-btn" class="primary-action-btn save-btn">Submit Update</button>
+      <button id="bulk-update-cancel-btn" class="primary-action-btn discard-btn">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Generic Modal for Confirmations/Alerts -->
+<div id="modal-container" class="modal-container" style="display:none;">
+  <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="modal-title" aria-describedby="modal-description">
+    <h2 id="modal-title"></h2>
+    <p id="modal-description"></p>
+    <div class="modal-buttons">
+      <button id="modal-confirm-btn" class="primary-action-btn save-btn">Confirm</button>
+      <button id="modal-cancel-btn" class="primary-action-btn discard-btn">Cancel</button>
+    </div>
+  </div>
+</div>
+</body>
+</html>

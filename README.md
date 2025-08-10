@@ -1,1 +1,1 @@
-# digital-switching
+# Digital-Switching

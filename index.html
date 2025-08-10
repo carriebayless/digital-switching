@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Student Room Selection</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- Toasts for success/error messages -->
+  <div id="toast" aria-live="polite" style="position:fixed; top:12px; left:50%; transform:translateX(-50%); z-index:9999;"></div>
+    <div class="header-container card">
+        <img src="images/cklogo.png" alt="Club Knights Logo" class="site-logo">
+        <h1 style="text-align: center;">Club Knights Digital Switching</h1>
+        <div id="room-status-bar" class="room-status-bar" aria-live="polite"></div>
+    </div>
+
+  <div id="grade-tabs" class="card"></div>
+  <div id="student-list" class="card"></div>
+
+  <div id="overlay" class="overlay">
+    <div id="room-selection" class="modal">
+      <h2 id="selected-student-name"></h2>
+      <p>Please select where you will be today:</p>
+      <div id="room-buttons"></div>
+    </div>
+  </div>
+
+  <div id="room-overlay" class="overlay">
+    <div id="room-overlay-card" class="modal" style="width:min(720px,92vw); max-height:80vh; overflow:auto;">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+        <h2 id="room-overlay-title" style="margin:0; font-size:1.25rem;">Choose a room</h2>
+        <button id="room-overlay-close" class="nav-button">Close</button>
+      </div>
+      <div id="room-overlay-list"></div>
+      <div id="room-overlay-empty" style="display:none; color:#666; font-style:italic; margin-top:8px;">No rooms available right now.</div>
+    </div>
+  </div>
+
+  <!-- Device status (can be hidden later in CSS) -->
+  <div id="device-status" style="position:fixed; bottom:10px; right:10px; font-size:.85rem; color:#555; background:#f6f6f6; border:1px solid #ddd; padding:6px 10px; border-radius:8px; z-index:9999; display:flex; gap:.5rem; align-items:center;">
+    <span id="device-name">Device</span> • <span id="device-filter">No list</span>
+    <button id="device-info-btn" title="Device details" style="margin-left:.25rem; border:1px solid #ccc; background:#fff; border-radius:50%; width:20px; height:20px; line-height:18px; font-size:.75rem; cursor:pointer;">i</button>
+  </div>
+
+  <div id="device-info-dialog" class="overlay">
+    <div class="modal" style="width:min(92vw,460px);">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+        <h3 style="margin:0; color:#00047e;">This iPad</h3>
+        <button id="device-info-close" style="border:1px solid #ccc; background:#f6f6f6; border-radius:6px; padding:4px 8px; cursor:pointer;">Close</button>
+      </div>
+      <div style="font-size:.95rem; color:#333; display:grid; grid-template-columns:140px 1fr auto; row-gap:8px; column-gap:8px; align-items:center;">
+        <div>Device name</div>
+        <div id="info-device-name" style="font-weight:600">—</div>
+        <span></span>
+
+        <div>Device key</div>
+        <div id="info-device-key" style="font-family:monospace; font-size:.9rem;">—</div>
+        <button id="copy-device-key" style="border:1px solid #ccc; background:#fff; border-radius:6px; padding:2px 6px; cursor:pointer;">Copy</button>
+
+        <div>Roster column</div>
+        <div id="info-filter-col">—</div>
+        <span></span>
+
+        <div>Roster value</div>
+        <div id="info-filter-val">—</div>
+        <span></span>
+
+        <div>Updated</div>
+        <div id="info-updated-at">—</div>
+        <span></span>
+      </div>
+    </div>
+  </div>
+
+  <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.42.3/dist/umd/supabase.min.js"></script>
+  <script defer src="app.js"></script>
+</body>
+</html>

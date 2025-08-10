@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Supervisor Dashboard</title>
+  <link rel="stylesheet" href="style.css" />
+  
+
+<style>
+  #room-table {
+    border-collapse: collapse;
+    width: 100%;
+  }
+  #room-table th, #room-table td {
+    border: 1px solid #ccc;
+    padding: 8px 12px;
+    text-align: left;
+  }
+  #room-table tbody tr.full-room td {
+    background-color: #f8d7da;
+  }
+  #room-table tbody tr.near-full-room td {
+    background-color: #fff3cd;
+  }
+  #room-table tbody tr.closed-room td {
+    background-color: #e0e0e0;
+  }
+  /* Styles for the new overlay (similar to find-students.html overlay) */
+  #clear-max-counts-overlay {
+    display: none; /* Hidden by default, controlled by JS */
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.7);
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    padding: 1rem;
+    box-sizing: border-box;
+  }
+
+  #clear-max-counts-overlay .overlay-content {
+    background-color: #ffffff;
+    padding: 25px;
+    border-radius: 15px;
+    text-align: center;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+    width: 90%;
+    max-width: 400px; /* Smaller modal for session selection */
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  #clear-session-buttons {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    gap: 10px;
+  }
+
+  #clear-session-buttons button {
+    min-height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 15px;
+    font-size: 1.1rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.2s;
+    border: 1px solid #ccc;
+    background-color: #f0f0f0;
+    color: #333;
+  }
+
+  #clear-session-buttons button:hover {
+    background-color: #e0e0e0;
+    transform: translateY(-2px);
+  }
+
+  #clear-max-counts-cancel {
+    border: 2px solid #b71c1c;
+    background-color: #ffe6e6;
+    color: #b71c1c;
+    font-weight: bold;
+    padding: 10px 15px;
+    border-radius: 8px;
+    cursor: pointer;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  /* Small UI bits for styled room labels */
+  .room-name-wrap { display:flex; align-items:center; gap:8px; }
+  .room-color-dot { width:12px; height:12px; border-radius:50%; border:1px solid rgba(0,0,0,.15); flex:0 0 auto; }
+  .room-emoji { font-size:1.05rem; line-height:1; flex:0 0 auto; }
+  .room-inline-editor input.room-icon-select { width:5.5rem; text-align:center; }
+  body { padding: 20px; }
+  .closed-room { background-color: #d3d3d3; }
+  .student-room-section { margin-top: 40px; }
+  .room-block { margin-bottom: 20px; }
+  .room-block h3 { margin-bottom: 5px; }
+  #room-table { margin-bottom: 32px; }
+  #room-table tbody tr { transition: background-color 0.3s ease; }
+  /* Add vertical space below the entire top controls card */
+  #session-tab-container { margin-bottom: 24px; }
+</style>
+
+</head>
+<body>
+  <!-- Supervisor navigation bar -->
+  <div id="nav-bar" class="top-nav">
+    <button onclick="window.location.href='index.html'" class="nav-button">Student Screen</button>
+    <button onclick="window.location.href='find-students.html'" class="nav-button">Find Students</button>
+    <button onclick="window.location.href='roster-manager.html'" class="nav-button">Roster Manager</button>
+  </div>
+
+  <h1>Supervisor Dashboard</h1>
+
+  <div id="session-tab-container" class="card">
+    <!-- Inline toolbar: put Site dropdown inside the card -->
+    <div id="site-toolbar" style="display:flex; align-items:center; justify-content:flex-start; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
+      <select id="student-list-dropdown" class="filter-select" style="min-width:260px;">
+        <option value="">(Show All Students)</option>
+        <!-- Site options -->
+        <option value="site|Albertville Primary School">Albertville Primary School</option>
+        <option value="site|Big Woods Elementary">Big Woods Elementary</option>
+        <option value="site|Fieldstone Elementary">Fieldstone Elementary</option>
+        <option value="site|St. Michael Elementary">St. Michael Elementary</option>
+        <!-- Summer Site options -->
+        <option value="summer_site|Kids Play">Kids Play</option>
+        <option value="summer_site|Club Knights">Club Knights</option>
+        <!-- Non-School Day option -->
+        <option value="non_school_day|true">Non-School Day</option>
+      </select>
+    </div>
+    <div class="session-bar" style="margin-bottom:10px;">
+      <button class="session-tab" data-session="session1">6:00</button>
+      <button class="session-tab" data-session="session2">9:00</button>
+      <button class="session-tab" data-session="session3">1:00</button>
+      <button class="session-tab" data-session="session4">3:00</button>
+    </div>
+  <div id="session-container" style="margin-top:20px;" aria-live="polite"></div>
+  </div>
+  <div id="rooms-card" class="card">
+  <div id="rooms-controls" style="display:flex; align-items:center; gap:16px; margin:12px 0;">
+    <label style="display:flex; align-items:center; gap:6px;">
+      <input type="checkbox" id="show-inactive" /> Show inactive rooms
+    </label>
+    <label style="display:flex; align-items:center; gap:6px;">
+      <input type="checkbox" id="manage-rooms" /> Manage rooms
+    </label>
+  </div>
+  <table id="room-table">
+    <thead>
+      <tr>
+        <th>Room Name</th>
+        <th>In Room</th>
+        <th>Max Count</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+  <!-- Inline editor template for room color + icon -->
+  <template id="room-inline-edit-template">
+    <div class="room-inline-editor" style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-top:8px;">
+      <label style="display:flex; align-items:center; gap:6px;">
+        <span style="min-width:44px; color:#555;">Color</span>
+        <input type="color" class="room-color-picker" value="#ffffff" />
+      </label>
+      <label style="display:flex; align-items:center; gap:6px;">
+        <span style="min-width:44px; color:#555;">Icon</span>
+        <input class="room-icon-select" type="text" inputmode="text" placeholder="Emoji (e.g., 🏀)" />
+      </label>
+      <span style="flex:1"></span>
+      <button class="nav-button save-room-style" type="button">Save</button>
+      <button class="nav-button cancel-room-style" type="button">Cancel</button>
+    </div>
+  </template>
+  </div>
+
+  <div id="student-rooms" class="student-room-section"></div>
+<div id="clear-max-counts-overlay" class="overlay">
+    <div class="modal">
+      <h2 style="color: #00047e; margin-bottom: 20px;">Clear Max Counts For Which Time?</h2>
+      <div id="clear-session-buttons" class="room-buttons">
+        </div>
+      <button id="clear-max-counts-cancel" class="nav-button" style="margin-top: 20px;">Cancel</button>
+    </div>
+  </div>
+
+<!-- Devices (per‑iPad) — collapsible and placed after Rooms -->
+<details id="devices-details" style="margin-top:28px;">
+  <summary style="cursor:pointer; font-weight:700; font-size:1.05rem; display:flex; align-items:center; gap:.5rem;">
+    Devices (iPads)
+    <span id="devices-count" style="font-weight:500; color:#666; font-size:.95rem;"></span>
+    <span id="devices-collapse-icon" class="collapse-icon" title="Panel is hidden" aria-hidden="true" style="display:none; margin-left:6px; font-size:10px; line-height:1; color:#0b3d91;">●</span>
+  </summary>
+
+  <div id="devices-panel" class="card" style="margin: 12px 0 8px 0;">
+    <div style="display:flex; gap:8px; align-items:center; margin-bottom:10px; flex-wrap:wrap;">
+      <label style="display:flex; align-items:center; gap:6px;">
+        <input id="devices-show-inactive" type="checkbox" /> Show inactive
+      </label>
+      <input id="device-search" type="text" placeholder="Search devices…" style="flex:1; min-width:240px; padding:8px 10px; border:1px solid #ccc; border-radius:6px;">
+      <button id="refresh-devices" class="nav-button">Refresh</button>
+    </div>
+
+    <table id="devices-table" style="width:100%; border-collapse:collapse;">
+      <thead>
+        <tr>
+          <th style="text-align:left; border-bottom:1px solid #ddd; padding:6px 8px;">Device Name</th>
+          <th style="text-align:left; border-bottom:1px solid #ddd; padding:6px 8px; width:320px;">Assigned List</th>
+          <th style="text-align:left; border-bottom:1px solid #ddd; padding:6px 8px;">Key</th>
+          <th style="text-align:left; border-bottom:1px solid #ddd; padding:6px 8px;">Updated</th>
+          <th style="text-align:left; border-bottom:1px solid #ddd; padding:6px 8px;">Status</th>
+          <th style="text-align:left; border-bottom:1px solid #ddd; padding:6px 8px; width:220px;">Actions</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <!-- Row template for devices -->
+  <template id="device-row-template">
+    <tr>
+      <td style="padding:6px 8px;">
+        <input class="dev-name" type="text" placeholder="e.g., FE1 – Cafeteria" style="width:100%; padding:6px 8px; border:1px solid #ccc; border-radius:6px;">
+      </td>
+      <td style="padding:6px 8px;">
+        <select class="dev-filter" style="width:100%; padding:6px 8px; border:1px solid #ccc; border-radius:6px;">
+          <option value="">(Show All Students)</option>
+          <!-- Site options -->
+          <option value="site|Albertville Primary School">Albertville Primary School</option>
+          <option value="site|Big Woods Elementary">Big Woods Elementary</option>
+          <option value="site|Fieldstone Elementary">Fieldstone Elementary</option>
+          <option value="site|St. Michael Elementary">St. Michael Elementary</option>
+          <!-- Summer Site options -->
+          <option value="summer_site|Kids Play">Kids Play</option>
+          <option value="summer_site|Club Knights">Club Knights</option>
+          <!-- Non-School Day option -->
+          <option value="non_school_day|true">Non-School Day</option>
+        </select>
+      </td>
+      <td class="dev-key" style="padding:6px 8px; font-family:monospace;"></td>
+      <td class="dev-updated" style="padding:6px 8px; color:#666; font-size:.9rem;">—</td>
+      <td class="dev-status" style="padding:6px 8px;">
+        <span class="status-pill" style="display:inline-block; padding:2px 8px; border-radius:999px; background:#eef; color:#225; font-size:.85rem;">Active</span>
+      </td>
+      <td style="padding:6px 8px; display:flex; gap:6px;">
+        <button class="dev-info nav-button" title="Details">Info</button>
+        <button class="dev-save nav-button" title="Save">Save</button>
+        <button class="dev-remove nav-button" title="Remove" style="background:#ffe6e6; border-color:#f5c2c7; color:#b71c1c;">Remove</button>
+        <button class="dev-restore nav-button" title="Restore" style="display:none;">Restore</button>
+      </td>
+    </tr>
+  </template>
+</details>
+
+<!-- Device Info dialog (Supervisor) -->
+<div id="device-admin-dialog" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:1500; align-items:center; justify-content:center;">
+  <div style="background:#fff; padding:16px 18px; border-radius:10px; width:min(92vw,600px); box-shadow:0 10px 30px rgba(0,0,0,.25);">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+      <h3 style="margin:0; color:#00047e;">Device details</h3>
+      <button id="device-admin-close" class="nav-button">Close</button>
+    </div>
+    <div style="font-size:.95rem; color:#333; display:grid; grid-template-columns:160px 1fr auto; row-gap:10px; column-gap:10px; align-items:center;">
+      <div>Device name</div>
+      <div id="admin-info-device-name" style="font-weight:600">—</div>
+      <span></span>
+
+      <div>Device key</div>
+      <div id="admin-info-device-key" style="font-family:monospace; font-size:.9rem;">—</div>
+      <button id="admin-copy-device-key" class="nav-button">Copy</button>
+
+      <div>Assigned list</div>
+      <div id="admin-info-filter" ></div>
+      <span></span>
+
+      <div>Updated</div>
+      <div id="admin-info-updated" style="color:#666;">—</div>
+      <span></span>
+
+      <div>Status</div>
+      <div id="admin-info-status">—</div>
+      <span></span>
+    </div>
+  </div>
+</div>
+
+<!-- Floating Add Room Button -->
+<button id="add-room-fab" aria-label="Add Room">+</button>
+
+<!-- Add Room Overlay / Modal -->
+<div id="add-room-overlay" class="overlay" style="display:none;">
+  <div id="add-room-modal-content" class="modal">
+   <h2>Add New Room</h2>
+    <form id="add-room-form">
+          <label for="add-room-site" style="display:block; text-align:left; font-weight:600;">Site</label>
+          <select id="add-room-site" required>
+            <option value="" disabled selected>Select a site…</option>
+            <option value="Albertville Primary School">Albertville Primary School</option>
+            <option value="Big Woods Elementary">Big Woods Elementary</option>
+            <option value="Fieldstone Elementary">Fieldstone Elementary</option>
+            <option value="St. Michael Elementary">St. Michael Elementary</option>
+            <option value="Kids Play">Kids Play</option>
+            <option value="Club Knights">Club Knights</option>
+            <option value="Non-School Day">Non-School Day</option>
+      </select>
+      <input type="text" id="new-room-name" placeholder="Room Name" required />
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-top:10px;">
+        <div>
+          <label for="add-room-color" style="display:block; text-align:left; font-weight:600; margin-bottom:6px;">Color</label>
+          <input type="color" id="add-room-color" class="room-color-picker" value="#ffffff" />
+          <div style="font-size:.85rem; color:#666; margin-top:4px;">Used for chips & room button accents.</div>
+        </div>
+        <div>
+          <label for="add-room-icon" style="display:block; text-align:left; font-weight:600; margin-bottom:6px;">Icon</label>
+          <input id="add-room-icon" class="room-icon-select" type="text" inputmode="text" placeholder="Tap to pick emoji (e.g., 🎨 🏀 🌳)" />
+          <div style="font-size:.85rem; color:#666; margin-top:4px;">Any emoji allowed. Leave blank for none.</div>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button type="button" id="cancel-add-room" class="cancel-btn">Cancel</button>
+        <button type="submit" id="confirm-add-room" class="add-btn">Add Room</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+  <!-- Toast container for inline status messages -->
+  <div id="toast" aria-live="polite" aria-atomic="true" style="position:fixed; bottom:20px; left:50%; transform:translateX(-50%); z-index:1100;"></div>
+  <script type="module" src="supervisor.js"></script>
+</body>
+</html>
