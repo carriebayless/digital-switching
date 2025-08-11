@@ -296,6 +296,25 @@
   </div>
 </div>
 
+<!-- Device Remove / Delete chooser dialog -->
+<div id="device-remove-dialog" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:1500; align-items:center; justify-content:center;">
+  <div style="background:#fff; padding:16px 18px; border-radius:10px; width:min(92vw,520px); box-shadow:0 10px 30px rgba(0,0,0,.25);">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+      <h3 style="margin:0; color:#00047e;">Remove device</h3>
+      <button id="device-remove-cancel" class="nav-button">Cancel</button>
+    </div>
+
+    <div style="font-size:.95rem; color:#333; line-height:1.45;">
+      <p style="margin:.25rem 0 .75rem;">What would you like to do with this device?</p>
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin:10px 0 4px;">
+        <button id="device-remove-hide" class="nav-button" style="background:#eef6ff; border-color:#cfe1ff; color:#0b3d91; padding:10px 12px;">Hide (can restore)</button>
+        <button id="device-remove-delete" class="nav-button" style="background:#fee2e2; border-color:#fecaca; color:#991b1b; padding:10px 12px;">Delete permanently</button>
+      </div>
+      <div style="font-size:.88rem; color:#666; margin-top:.25rem;">Device: <span id="device-remove-label" style="font-weight:600;">—</span></div>
+    </div>
+  </div>
+</div>
+
 <!-- Floating Add Room Button -->
 <button id="add-room-fab" aria-label="Add Room">+</button>
 

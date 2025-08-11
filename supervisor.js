@@ -558,14 +558,31 @@ async function loadDevicesPanel() {
   const showInactiveCb = document.getElementById('devices-show-inactive');
   _devicesShowInactive = !!showInactiveCb?.checked;
 
+  // Try selecting with `id`; fall back if column doesn't exist
   let sel = supabase
     .from('device_roster_filters')
-    .select('device_key, device_name, filter_column, filter_value, updated_at, active')
+    .select('id, device_key, device_name, filter_column, filter_value, updated_at, active')
     .order('device_name', { ascending: true })
     .order('device_key', { ascending: true });
   if (!_devicesShowInactive) sel = sel.eq('active', true);
 
-  const { data, error } = await sel;
+  let { data, error } = await sel;
+
+  if (error && (error.code === '42703' || /column\s+"?id"?\s+does not exist/i.test(error.message || ''))) {
+    // Fallback: table doesn't have an `id` column; re-run without it
+    let sel2 = supabase
+      .from('device_roster_filters')
+      .select('device_key, device_name, filter_column, filter_value, updated_at, active')
+      .order('device_name', { ascending: true })
+      .order('device_key', { ascending: true });
+    if (!_devicesShowInactive) sel2 = sel2.eq('active', true);
+    const res2 = await sel2;
+    data = res2.data || [];
+    error = res2.error || null;
+    // Normalize: attach null id so downstream code can accept either id or key
+    if (Array.isArray(data)) data = data.map(d => ({ id: null, ...d }));
+  }
+
   if (error) {
     console.error('Error loading devices:', { code: error.code, message: error.message, details: error.details, hint: error.hint });
     tbody.innerHTML = '<tr><td colspan="6" style="padding:8px; color:#900;">Failed to load devices.</td></tr>';
@@ -606,6 +623,10 @@ function renderDevicesTable(list) {
     const infoBtn = frag.querySelector('.dev-info');
     const removeBtn = frag.querySelector('.dev-remove');
     const restoreBtn = frag.querySelector('.dev-restore');
+
+    // Legacy inline permanent-delete button is deprecated; hide if present
+    const legacyDeleteBtn = frag.querySelector('.dev-delete');
+    if (legacyDeleteBtn) legacyDeleteBtn.style.display = 'none';
 
     nameInput.value = dev.device_name || '';
     keyCell.textContent = dev.device_key;
@@ -654,10 +675,7 @@ function renderDevicesTable(list) {
 
     if (infoBtn) infoBtn.addEventListener('click', () => openDeviceInfo(dev));
 
-    if (removeBtn) removeBtn.addEventListener('click', async () => {
-      if (!confirm('Remove this device from the list? (Soft delete)')) return;
-      await softDeleteDevice(dev.device_key);
-    });
+    if (removeBtn) removeBtn.addEventListener('click', () => openDeviceRemoveDialog(dev));
 
     if (restoreBtn) restoreBtn.addEventListener('click', async () => {
       await restoreDevice(dev.device_key);
@@ -667,18 +685,17 @@ function renderDevicesTable(list) {
   });
 }
 
-async function softDeleteDevice(deviceKey) {
+async function softDeleteDevice(id, deviceKey) {
   try {
-    const { error } = await supabase
-      .from('device_roster_filters')
-      .update({ active: false, updated_at: new Date().toISOString() })
-      .eq('device_key', deviceKey);
+    let q = supabase.from('device_roster_filters').update({ active: false, updated_at: new Date().toISOString() });
+    q = id ? q.eq('id', id) : q.eq('device_key', deviceKey);
+    const { error } = await q;
     if (error) throw error;
-    showToast('Device removed', 'info');
+    showToast('Device hidden (can restore).', 'success');
     loadDevicesPanel();
   } catch (e) {
     console.error('Soft delete failed:', e);
-    showToast('Failed to remove device', 'error');
+    showToast('Failed to hide device.', 'error');
   }
 }
 
@@ -695,6 +712,86 @@ async function restoreDevice(deviceKey) {
     console.error('Restore failed:', e);
     showToast('Failed to restore device', 'error');
   }
+}
+
+async function hardDeleteDevice(id, deviceKey) {
+  try {
+    let q = supabase.from('device_roster_filters').delete();
+    q = id ? q.eq('id', id) : q.eq('device_key', deviceKey);
+    const { data, error } = await q.select('device_key');
+    if (error) throw error;
+
+    const affected = Array.isArray(data) ? data.length : 0;
+    if (affected > 0) {
+      showToast('Device permanently deleted.', 'success');
+    } else {
+      // Some PostgREST/RLS configs return no rows even when delete succeeds, or may block delete.
+      // As a resilient fallback, mark inactive so it disappears when not showing inactive.
+      let uq = supabase.from('device_roster_filters').update({ active: false, updated_at: new Date().toISOString() });
+      uq = id ? uq.eq('id', id) : uq.eq('device_key', deviceKey);
+      const { error: upErr } = await uq;
+      if (upErr) throw upErr;
+      showToast('No matching device to hard-delete; hid the device instead.', 'info');
+    }
+
+    // Optimistic UI: drop from current list immediately
+    if (Array.isArray(_allDevices) && (_allDevices.length > 0)) {
+      _allDevices = _allDevices.filter(d => (id ? d.id !== id : d.device_key !== deviceKey));
+      const q = (_devicesSearch || '').toLowerCase();
+      const filtered = q
+        ? _allDevices.filter(d => (d.device_name || '').toLowerCase().includes(q) || (d.device_key || '').toLowerCase().includes(q))
+        : _allDevices;
+      updateDevicesCount(filtered.length);
+      renderDevicesTable(filtered);
+    }
+
+    await loadDevicesPanel();
+  } catch (e) {
+    console.error('Hard delete failed:', e);
+    const msg = e?.message || 'Failed to permanently delete device.';
+    showToast(msg, 'error');
+    // Attempt to refresh so UI stays in sync
+    loadDevicesPanel();
+  }
+}
+
+// --- Remove/Delete chooser modal wiring ---
+let _removeDlgEl = null;
+let _removeHideBtn = null;
+let _removeDeleteBtn = null;
+let _removeCancelBtn = null;
+let _removeLabelEl = null;
+let _removeDeviceKey = null;
+let _removeDeviceId = null;
+
+function openDeviceRemoveDialog(dev){
+  _removeDeviceKey = dev?.device_key || null;
+  _removeDeviceId = dev?.id || null;
+  if (!_removeDlgEl) {
+    _removeDlgEl = document.getElementById('device-remove-dialog');
+    _removeHideBtn = document.getElementById('device-remove-hide');
+    _removeDeleteBtn = document.getElementById('device-remove-delete');
+    _removeCancelBtn = document.getElementById('device-remove-cancel');
+    _removeLabelEl = document.getElementById('device-remove-label');
+    // Attach one-time handlers
+    if (_removeCancelBtn) _removeCancelBtn.addEventListener('click', () => { if (_removeDlgEl) _removeDlgEl.style.display = 'none'; });
+    if (_removeHideBtn) _removeHideBtn.addEventListener('click', async () => {
+      if (!_removeDeviceKey && !_removeDeviceId) return;
+      await softDeleteDevice(_removeDeviceId, _removeDeviceKey);
+      if (_removeDlgEl) _removeDlgEl.style.display = 'none';
+    });
+    if (_removeDeleteBtn) _removeDeleteBtn.addEventListener('click', async () => {
+      if (!_removeDeviceKey && !_removeDeviceId) return;
+      await hardDeleteDevice(_removeDeviceId, _removeDeviceKey);
+      if (_removeDlgEl) _removeDlgEl.style.display = 'none';
+    });
+    if (_removeDlgEl) _removeDlgEl.addEventListener('click', (e) => { if (e.target === _removeDlgEl) _removeDlgEl.style.display = 'none'; });
+  }
+  if (_removeLabelEl) {
+    const label = (dev?.device_name && dev.device_name.trim()) ? `${dev.device_name} (${dev.device_key})` : (dev?.device_key || '—');
+    _removeLabelEl.textContent = label;
+  }
+  if (_removeDlgEl) _removeDlgEl.style.display = 'flex';
 }
 
 function openDeviceInfo(dev) {

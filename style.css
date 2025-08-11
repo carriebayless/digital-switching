@@ -1118,3 +1118,178 @@ select,
 .summary-item.summary-pill.time-edit .summary-time-input::-webkit-calendar-picker-indicator {
   margin-right: 2px; /* align the clock icon a bit nicer */
 }
+
+/* ================= Mobile optimizations ================= */
+@media (max-width: 768px) {
+  /* Make the rooms table usable on phones */
+  #room-table {
+    display: block;                 /* allow horizontal scroll */
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border-collapse: separate;      /* helps with sticky cells */
+  }
+  #room-table thead th {
+    position: sticky;               /* sticky header */
+    top: 0;
+    z-index: 3;
+    background: #f0f2f5;            /* match header bg */
+  }
+  /* Sticky first column for name */
+  #room-table th:first-child,
+  #room-table td:first-child {
+    position: sticky;
+    left: 0;
+    z-index: 2;
+    background: #ffffff;            /* keep readable over scroll */
+  }
+  /* Slightly taller rows for tap targets */
+  #room-table td, #room-table th { padding: 0.9rem 1rem; }
+
+  /* Bigger tap targets for primary controls */
+  .session-tab, .clear-max-chip, .nav-button {
+    min-height: 44px;               /* iOS HIG min */
+    padding: 10px 16px;
+    font-size: 1rem;
+  }
+
+  /* Summary chips reflow tighter on small screens */
+  .summary-card { gap: 16px 20px; }
+  .summary-item.summary-pill { height: auto; }
+  .summary-item.summary-pill .summary-time-input { height: 40px; }
+}
+
+/* Respect iOS safe areas on very small devices */
+@supports(padding: max(0px)) {
+  @media (max-width: 480px) {
+    body { padding-bottom: max(10px, env(safe-area-inset-bottom)); }
+  }
+}
+
+/* Roster Manager: edit action buttons */
+#edit-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+#save-changes-btn,
+#discard-changes-btn {
+  appearance: none;
+  -webkit-tap-highlight-color: transparent;
+  border-radius: 9999px;            /* pill to match site chips */
+  padding: 12px 18px;               /* bigger tap area */
+  min-height: 44px;                 /* mobile-friendly */
+  font-size: 16px;
+  line-height: 1;
+  font-weight: 600;
+  border: 1px solid transparent;
+  box-shadow: 0 1px 2px rgba(16,24,40,.05);
+  transition: transform .06s ease, box-shadow .2s ease, background-color .2s ease, opacity .2s ease;
+  cursor: pointer;
+}
+
+#save-changes-btn {
+  background: #2563eb;              /* brand-ish blue */
+  color: #fff;
+  border-color: #1d4ed8;
+}
+#save-changes-btn:hover { box-shadow: 0 2px 6px rgba(37,99,235,.35); transform: translateY(-1px); }
+#save-changes-btn:active { transform: scale(.98); }
+
+#discard-changes-btn {
+  background: #f8fafc;              /* subtle to match site neutrals */
+  color: #0b1727;
+  border-color: #d0d5dd;
+}
+#discard-changes-btn:hover { box-shadow: 0 2px 6px rgba(0,0,0,.08); transform: translateY(-1px); }
+#discard-changes-btn:active { transform: scale(.98); }
+
+#bulk-preview-bar {
+  /* unify look with site surface + safe spacing */
+  background: var(--surface, #fff);
+  border-top: 1px solid var(--border, #d0d5dd);
+  box-shadow: 0 -6px 18px rgba(0,0,0,.08);
+  padding: 12px 16px;
+}
+#bulk-preview-bar #bulk-preview-summary {
+  color: var(--text, #0f172a);
+}
+
+/* Pill buttons matching site style */
+#bulk-preview-apply,
+#bulk-preview-cancel {
+  appearance: none;
+  -webkit-tap-highlight-color: transparent;
+  border-radius: 9999px;
+  padding: 12px 18px;
+  min-height: 44px;                /* mobile friendly */
+  font-size: 16px;
+  line-height: 1;
+  font-weight: 700;
+  border: 1px solid transparent;
+  box-shadow: 0 1px 2px rgba(16,24,40,.05);
+  cursor: pointer;
+  transition: transform .06s ease, box-shadow .2s ease, background-color .2s ease;
+}
+
+#bulk-preview-apply {
+  background: var(--brand, #3467eb);
+  border-color: var(--brand, #3467eb);
+  color: #fff;
+}
+#bulk-preview-apply:hover { box-shadow: 0 2px 6px color-mix(in srgb, var(--brand, #3467eb) 35%, transparent); transform: translateY(-1px); }
+#bulk-preview-apply:active { transform: scale(.98); }
+
+#bulk-preview-cancel {
+  background: #f8fafc;
+  color: var(--text, #0f172a);
+  border-color: var(--border, #d0d5dd);
+}
+#bulk-preview-cancel:hover { box-shadow: 0 2px 6px rgba(0,0,0,.08); transform: translateY(-1px); }
+#bulk-preview-cancel:active { transform: scale(.98); }
+
+@supports(padding: max(0px)) {
+  /* keep bar clear of iOS home indicator */
+  #bulk-preview-bar { padding-bottom: max(12px, env(safe-area-inset-bottom)); }
+}
+/* ================= Kindergarten Animal Chips ================= */
+/* These buttons also have the .grade-tab class; override borders/colors here */
+.grade-tab.kg-chip {
+  border: none !important;                 /* remove blue border */
+  color: #fff;                              /* ensure readable on colored bg */
+  box-shadow: 0 1px 2px rgba(16,24,40,.08);
+  transition: transform .06s ease, box-shadow .2s ease, filter .15s ease;
+}
+
+/* Stronger hover lift + slight brighten */
+.grade-tab.kg-chip:hover {
+  box-shadow: 0 6px 16px rgba(16,24,40,.18);
+  transform: translateY(-1px);
+  filter: brightness(1.06);
+}
+
+/* Pressed feedback */
+.grade-tab.kg-chip:active {
+  transform: scale(0.985);
+  filter: brightness(0.93);
+}
+
+/* Selected chip — keep its own color, add a touch more presence */
+.grade-tab.kg-chip.active {
+  box-shadow: 0 8px 22px rgba(16,24,40,.22);
+  filter: brightness(1.08);
+}
+
+/* Accessible focus without the blue outline */
+.grade-tab.kg-chip:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(255,255,255,.6), 0 0 0 6px rgba(0,0,0,.18);
+}
+
+.rm-danger {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+.rm-danger:hover { background: #fecaca; }

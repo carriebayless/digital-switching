@@ -2,30 +2,37 @@
 
 // --- FILTERED STUDENT LIST SUPPORT ---
 async function fetchFilteredStudents() {
-  // Use the device-assigned filter exclusively for Student UI
   const col = currentDevice?.column;
   const val = currentDevice?.value;
+  if (!col) return [];
 
-  // If the device isn't assigned yet, return an empty list (UI will show message)
-  if (!col) {
-    return [];
+  const build = (selectCols) => {
+    let q = supabase.from('master_roster').select(selectCols);
+    if (col === 'non_school_day') {
+      const boolVal = (val === true || String(val) === 'true');
+      q = q.eq('non_school_day', boolVal);
+    } else {
+      q = q.eq(col, val);
+    }
+    return q;
+  };
+
+  // attempt kgroups → k_groups → kgroup
+  let query = build('id, firstname, lastname, grade, kgroups');
+  let { data, error } = await query;
+  if (error && error.code === '42703') {
+    query = build('id, firstname, lastname, grade, k_groups');
+    ({ data, error } = await query);
+    if (error && error.code === '42703') {
+      query = build('id, firstname, lastname, grade, kgroup');
+      ({ data, error } = await query);
+    }
   }
-
-  let query = supabase.from('master_roster').select('id, firstname, lastname, grade');
-
-  if (col === 'non_school_day') {
-    const boolVal = (val === true || String(val) === 'true');
-    query = query.eq('non_school_day', boolVal);
-  } else {
-    query = query.eq(col, val);
-  }
-
-  const { data: students, error } = await query;
   if (error) {
     console.error('Error fetching students:', error.message);
     return [];
   }
-  return students || [];
+  return data || [];
 }
 
 // --- END FILTERED STUDENT LIST SUPPORT ---
@@ -223,6 +230,23 @@ async function ensureDeviceRow() {
   }
 }
 
+function updateSiteTitleFromDevice(){
+  const col = currentDevice?.column;
+  const val = currentDevice?.value;
+  let label = '';
+  if (col === 'site' || col === 'summer_site') label = val || '';
+  else if (col === 'non_school_day' && String(val) === 'true') label = 'Non-School Day';
+
+  // Prefer a dedicated element if present, otherwise fall back to the main H1
+  const el = document.getElementById('site-title')
+        || document.querySelector('header h1')
+        || Array.from(document.querySelectorAll('h1')).find(h => /digital switching/i.test(h.textContent))
+        || document.querySelector('h1');
+  if (el && label) {
+    el.textContent = label;
+  }
+}
+
 function applyDeviceFilterRow(row) {
   if (!row) return;
   if (!window.currentDevice) window.currentDevice = {};
@@ -246,6 +270,7 @@ function applyDeviceFilterRow(row) {
   }
 
   if (typeof renderDeviceInfoPanel === 'function') renderDeviceInfoPanel();
+  updateSiteTitleFromDevice();
 }
 
 // Determine site used by rooms for this device's filter
@@ -416,6 +441,37 @@ const ROOM_ICON_MAP = {
   roomd: '🇩', roome: '🇪',
   creative: '🧩', discovery: '🔎', imagination: '💡'
 };
+
+const KG_ANIMAL_STYLES = {
+  bears: { emoji: '🐻', color: '#8D5524' },
+  bear:  { emoji: '🐻', color: '#8D5524' },
+  tigers:{ emoji: '🐯', color: '#F59E0B' },
+  tiger: { emoji: '🐯', color: '#F59E0B' },
+  lions: { emoji: '🦁', color: '#FACC15' },
+  lion:  { emoji: '🦁', color: '#FACC15' },
+  giraffes:{emoji:'🦒', color:'#FBBF24'},
+  giraffe:{ emoji:'🦒', color:'#FBBF24'},
+  pandas:{ emoji:'🐼', color:'#4B5563'},
+  panda: { emoji:'🐼', color:'#4B5563'},
+  foxes: { emoji:'🦊', color:'#F97316'},
+  fox:   { emoji:'🦊', color:'#F97316'},
+  owls:  { emoji:'🦉', color:'#6B7280'},
+  owl:   { emoji:'🦉', color:'#6B7280'},
+  dolphins:{emoji:'🐬', color:'#60A5FA'},
+  dolphin:{emoji:'🐬', color:'#60A5FA'},
+  penguins:{emoji:'🐧', color:'#374151'},
+  penguin:{ emoji:'🐧', color:'#374151'},
+  zebras:{ emoji:'🦓', color:'#111827'},
+  zebra: { emoji:'🦓', color:'#111827'},
+  elephants: { emoji: '🐘', color: '#9CA3AF' },
+  elephant:  { emoji: '🐘', color: '#9CA3AF' },
+  frogs:     { emoji: '🐸', color: '#22C55E' },
+  frog:      { emoji: '🐸', color: '#22C55E' }
+};
+function styleForKAnimal(name){
+  const k = (name||'').toString().trim().toLowerCase();
+  return KG_ANIMAL_STYLES[k] || { emoji:'🐾', color:'#94a3b8' };
+}
 
 function resolveRoomStyle(room) {
   // --- normalize color_hex ---
@@ -601,6 +657,8 @@ async function loadStudents() {
     });
   }
 
+  const isAlbertvillePrimary = (currentDevice?.column === 'site' && currentDevice?.value === 'Albertville Primary School');
+
   // Build grade sections in the same sorted order
   uniqueGradeKeys.forEach((gradeKey, index) => {
     const section = document.createElement('div');
@@ -620,25 +678,99 @@ async function loadStudents() {
       .filter(s => gradeKeyFor(s) === gradeKey)
       .sort(compareFirstLast);
 
-    inThisGrade.forEach(student => {
-      const btn = document.createElement('button');
-      // Display as "First Last"
-      btn.textContent = `${student.firstname} ${student.lastname}`;
-      btn.classList.add('student-name');
-      btn.dataset.id = student.id;
-      btn.dataset.name = `${student.firstname} ${student.lastname}`;
-      btn.style.cursor = 'pointer';
-      btn.style.padding = '10px 15px';
-      btn.style.fontSize = '1.2rem';
-      btn.style.borderRadius = '8px';
-      btn.style.border = '1px solid #ccc';
-      btn.style.flex = '1 1 calc(50% - 10px)';
-      btn.style.color = '#000';
-      btn.addEventListener('click', () => openRoomOverlayForStudent(student));
-      studentGrid.appendChild(btn);
-    });
+    if (isAlbertvillePrimary && gradeKey === 'K') {
+      // 1) Build K-group chips (tabs) - as a horizontal pill row, styled like grade tabs, with animal color
+      const groupTabs = document.createElement('div');
+      groupTabs.style.display = 'flex';
+      groupTabs.style.flexWrap = 'wrap';
+      groupTabs.style.gap = '12px';
+      groupTabs.style.margin = '8px 0 12px';
 
-    section.appendChild(studentGrid);
+      // Partition K students by group value
+      const groupOf = (s) => s.kgroups ?? s.k_groups ?? s.kgroup ?? 'Group';
+      const groups = new Map();
+      inThisGrade.forEach(s => {
+        const g = groupOf(s) || 'Group';
+        if (!groups.has(g)) groups.set(g, []);
+        groups.get(g).push(s);
+      });
+
+      // Create a container per group (hidden by default)
+      const groupContainers = {};
+      Array.from(groups.keys()).sort((a,b)=>String(a).localeCompare(String(b))).forEach((gName, idx) => {
+        const { emoji, color } = styleForKAnimal(gName);
+        const chip = document.createElement('button');
+        chip.type = 'button';
+        chip.textContent = `${emoji} ${gName}`;
+        chip.classList.add('grade-tab', 'kg-chip'); // reuse pill styling but allow custom overrides
+        chip.dataset.group = gName;
+        // override background to animal color
+        chip.style.background = color;
+        chip.style.color = '#fff';
+        // first chip active by default
+        if (idx === 0) chip.classList.add('active');
+        groupTabs.appendChild(chip);
+
+        const grid = document.createElement('div');
+        grid.style.display = idx === 0 ? 'flex' : 'none';
+        grid.style.flexWrap = 'wrap';
+        grid.style.rowGap = '2px';
+        grid.style.columnGap = '16px';
+        grid.style.margin = '8px 0 16px';
+
+        groups.get(gName).forEach(student => {
+          const btn = document.createElement('button');
+          btn.textContent = `${student.firstname} ${student.lastname}`;
+          btn.classList.add('student-name');
+          btn.dataset.id = student.id;
+          btn.dataset.name = `${student.firstname} ${student.lastname}`;
+          btn.style.cursor = 'pointer';
+          btn.style.padding = '10px 15px';
+          btn.style.fontSize = '1.2rem';
+          btn.style.borderRadius = '8px';
+          btn.style.border = '1px solid #ccc';
+          btn.style.flex = '1 1 calc(50% - 10px)';
+          btn.style.color = '#000';
+          btn.addEventListener('click', () => openRoomOverlayForStudent(student));
+          grid.appendChild(btn);
+        });
+
+        groupContainers[gName] = grid;
+        section.appendChild(grid);
+      });
+
+      // Wire chip clicks like tabs, toggle active state
+      groupTabs.addEventListener('click', (e) => {
+        const chip = e.target.closest('button[data-group]');
+        if (!chip) return;
+        const g = chip.dataset.group;
+        // toggle active state like grade tabs
+        groupTabs.querySelectorAll('button[data-group]').forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+        // show matching grid
+        Object.entries(groupContainers).forEach(([name, el]) => { el.style.display = (name === g) ? 'flex' : 'none'; });
+      });
+
+      section.insertBefore(groupTabs, section.firstChild);
+    } else {
+      inThisGrade.forEach(student => {
+        const btn = document.createElement('button');
+        btn.textContent = `${student.firstname} ${student.lastname}`;
+        btn.classList.add('student-name');
+        btn.dataset.id = student.id;
+        btn.dataset.name = `${student.firstname} ${student.lastname}`;
+        btn.style.cursor = 'pointer';
+        btn.style.padding = '10px 15px';
+        btn.style.fontSize = '1.2rem';
+        btn.style.borderRadius = '8px';
+        btn.style.border = '1px solid #ccc';
+        btn.style.flex = '1 1 calc(50% - 10px)';
+        btn.style.color = '#000';
+        btn.addEventListener('click', () => openRoomOverlayForStudent(student));
+        studentGrid.appendChild(btn);
+      });
+      section.appendChild(studentGrid);
+    }
     container.appendChild(section);
   });
 
@@ -900,6 +1032,7 @@ function renderDeviceInfoPanel() {
 // Initialize in correct order: wait for device row first, then session times, then students, then status bar
 (async () => {
   await ensureDeviceRow();
+  updateSiteTitleFromDevice();
   await loadSessionTimes();
   bindSessionTimesRealtime();
   await loadStudents();
