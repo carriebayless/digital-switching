@@ -61,16 +61,33 @@ function fsCurrentFilter() {
     if (raw != null) {
       try {
         const obj = JSON.parse(raw);
-        const norm = fsNormalizeFilter(obj);
-        if (norm && norm.column) return norm;
+        // Correctly handle the object if it's already in the right format
+        if (obj && obj.column) {
+          const norm = fsNormalizeFilter(obj);
+          if (norm.column) return norm;
+        }
       } catch {}
-      // If it's a plain string (legacy or simplified), treat it as a site name or NSD label
-      const normStr = fsNormalizeFilter(raw);
-      if (normStr && normStr.column) return normStr;
+      // If it's a plain string, check for summer site and other values
+      const s = raw.replace(/^"|"$/g, '').trim();
+      if (!s) return {};
+      if (s.toLowerCase() === 'non-school day' || s.toLowerCase() === 'non school day') {
+        return { column: 'non_school_day', value: true };
+      }
+      // Check if the site is one of your known summer sites
+      if (s === 'Kids Play' || s === 'Club Knights') {
+        return { column: 'summer_site', value: s };
+      }
+      // Fallback to site if it's a normal site name
+      return { column: 'site', value: s };
     }
     // Fallback keys used elsewhere
     const sitePlain = (localStorage.getItem('selectedSiteName') || localStorage.getItem('site') || '').trim();
-    if (sitePlain) return fsNormalizeFilter(sitePlain);
+    if (sitePlain) {
+        if (sitePlain === 'Kids Play' || sitePlain === 'Club Knights') {
+            return { column: 'summer_site', value: sitePlain };
+        }
+        return fsNormalizeFilter(sitePlain);
+    }
   } catch {}
   return {};
 }
