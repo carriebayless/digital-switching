@@ -808,13 +808,10 @@ document.addEventListener("DOMContentLoaded", async () => {
         .neq('assigned_room', 'Gone')
         .neq('assigned_room', 'Activity in Building');
 
-      // NOTE: 400 "column master_roster.site does not exist" when using OR(site, summer_site)
-      //       Use only summer_site for updates when the filter is a plain site label.
       const normCol = fsNormalizeColumnName(filterObj.column);
       let upd;
       if (normCol === 'site') {
-        // master_roster has no 'site' column; summer programming uses summer_site
-        upd = baseUpd.eq('summer_site', filterValue);
+        upd = baseUpd.eq('site', filterValue);
       } else if (normCol === 'non_school_day') {
         const boolVal = (filterValue === true || filterValue === 'true' || String(filterValue).toLowerCase() === '1');
         upd = baseUpd.eq('non_school_day', boolVal);
