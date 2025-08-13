@@ -913,9 +913,67 @@ async function openRoomOverlayForStudent(student) {
   }
 }
 
-// Reverted chooseRoom function
+// Server-authoritative room assignment using RPC (Option A)
 async function chooseRoom(studentId, site, roomName, timeSlot) {
-  // 1. Re-fetch room counts and check availability on the client.
+  // 0) Prevent double taps across all room-choice buttons in the overlay
+  const overlay = document.getElementById('room-overlay');
+  const buttons = overlay ? overlay.querySelectorAll('.room-choice') : [];
+  buttons.forEach(b => { b.disabled = true; b.style.opacity = '0.85'; });
+
+  try {
+    // 1) Call the safe, race-proof RPC on the server
+    const { data, error } = await supabase.rpc('assign_student_to_room_v2', {
+      p_student_id: Number(studentId),
+      p_site: site,
+      p_room_name: roomName,
+      p_time_slot: timeSlot // pass null for standard sites
+    });
+
+    // 2) Small UI delay for consistent feedback
+    await new Promise(res => setTimeout(res, 300));
+
+    if (error) {
+      // If the function is missing (e.g., not deployed), gracefully fallback to legacy client-side path
+      // PostgREST missing function error code can vary; check message text as a safety net
+      const msg = (error.message || '').toLowerCase();
+      const missing = error.code === '42883' || msg.includes('function') && msg.includes('does not exist');
+      if (missing) {
+        console.warn('[assign RPC] missing, falling back to client-side update');
+        await legacyChooseRoomClientSide(studentId, site, roomName, timeSlot);
+        return;
+      }
+      console.error('RPC error:', error);
+      showMessage('Failed to assign room. Please try again.', false);
+      return;
+    }
+
+    if (data === 'room_full') {
+      showMessage(`Sorry, ${roomName} is now full. Please choose another room.`, false);
+    } else if (data === 'room_not_found') {
+      showMessage('That room is unavailable right now.', false);
+    } else if (data === 'student_not_found') {
+      showMessage('Could not find that student record.', false);
+    } else if (data === 'success') {
+      showMessage(`Thanks, ${window.selectedStudentName}! You got a spot in ${roomName}.`, true);
+      if (overlay) overlay.classList.remove('show');
+    } else {
+      // Unknown payload; be conservative
+      showMessage('Unable to assign right now. Please try again.', false);
+    }
+  } catch (e) {
+    console.error('chooseRoom exception', e);
+    showMessage('Something went wrong. Please try again.', false);
+  } finally {
+    // 3) Refresh UI regardless of outcome
+    await loadStudents();
+    await loadRoomStatusBar();
+    // Re-enable buttons if overlay is still open
+    buttons.forEach(b => { b.disabled = false; b.style.opacity = ''; });
+  }
+}
+
+// Legacy client-side fallback used only when the RPC is not available
+async function legacyChooseRoomClientSide(studentId, site, roomName, timeSlot) {
   const [rooms, counts] = await Promise.all([
     fetchEligibleRooms(site, timeSlot),
     fetchRoomCounts(site)
@@ -925,25 +983,26 @@ async function chooseRoom(studentId, site, roomName, timeSlot) {
   const currentCount = counts.get(roomName) || 0;
 
   if (room && currentCount < room.capacity) {
-    // 2. If space is available, perform the update.
     const { error } = await supabase
       .from('master_roster')
       .update({ assigned_room: roomName, is_gone: false, gone_at: null })
       .eq('id', Number(studentId));
 
+    await new Promise(res => setTimeout(res, 300));
+
     if (!error) {
       showMessage(`Thanks, ${window.selectedStudentName}! You got a spot in ${roomName}.`, true);
-      document.getElementById('room-overlay').classList.remove('show');
+      const overlay = document.getElementById('room-overlay');
+      if (overlay) overlay.classList.remove('show');
     } else {
-      console.error('Update error:', error);
+      console.error('Legacy update error:', error);
       showMessage('Failed to assign room. Please try again.', false);
     }
   } else {
-    // 3. If the room is full, inform the user.
+    await new Promise(res => setTimeout(res, 300));
     showMessage(`Sorry, ${roomName} is now full. Please choose another room.`, false);
   }
 
-  // 4. Refresh the UI to reflect changes.
   await loadStudents();
   await loadRoomStatusBar();
 }
