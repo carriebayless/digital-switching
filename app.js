@@ -913,38 +913,39 @@ async function openRoomOverlayForStudent(student) {
   }
 }
 
+// Reverted chooseRoom function
 async function chooseRoom(studentId, site, roomName, timeSlot) {
-  try {
-    const { data, error } = await supabase.rpc('assign_student_to_room', {
-      p_student_id: Number(studentId),
-      p_site: site,
-      p_room_name: roomName,
-      p_time_slot: timeSlot
-    });
-    if (error) throw error;
-    const row = (data && data[0]) || { ok:false, message:'Unexpected response' };
-    if (row.ok) {
+  // 1. Re-fetch room counts and check availability on the client.
+  const [rooms, counts] = await Promise.all([
+    fetchEligibleRooms(site, timeSlot),
+    fetchRoomCounts(site)
+  ]);
+
+  const room = rooms.find(r => r.room_name === roomName);
+  const currentCount = counts.get(roomName) || 0;
+
+  if (room && currentCount < room.capacity) {
+    // 2. If space is available, perform the update.
+    const { error } = await supabase
+      .from('master_roster')
+      .update({ assigned_room: roomName, is_gone: false, gone_at: null })
+      .eq('id', Number(studentId));
+
+    if (!error) {
       showMessage(`Thanks, ${window.selectedStudentName}! You got a spot in ${roomName}.`, true);
-      // Ensure student is no longer marked gone if they pick a room
-      try {
-        await supabase
-          .from('master_roster')
-          .update({ is_gone: false, gone_at: null })
-          .eq('id', Number(studentId));
-      } catch (_) {}
       document.getElementById('room-overlay').classList.remove('show');
-      await loadStudents();
-      await loadRoomStatusBar();
     } else {
-      showMessage(row.message || 'Room is full', false);
-      // Refresh overlay availability
-      const fakeStudent = { id: studentId, firstname: window.selectedStudentName.split(' ')[0], lastname: window.selectedStudentName.split(' ').slice(1).join(' ') };
-      await openRoomOverlayForStudent(fakeStudent);
+      console.error('Update error:', error);
+      showMessage('Failed to assign room. Please try again.', false);
     }
-  } catch (e) {
-    console.error(e);
-    showMessage('Failed to assign room. Please try again.', false);
+  } else {
+    // 3. If the room is full, inform the user.
+    showMessage(`Sorry, ${roomName} is now full. Please choose another room.`, false);
   }
+
+  // 4. Refresh the UI to reflect changes.
+  await loadStudents();
+  await loadRoomStatusBar();
 }
 
 
