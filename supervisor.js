@@ -1431,6 +1431,45 @@ window.addEventListener("DOMContentLoaded", async () => {
     devicesDetails.addEventListener('toggle', syncDevicesIcon);
   }
 
+
+  // --- Resolve and show current device key next to the Devices header ---
+  function getCookie(name){
+    const m = document.cookie.match(new RegExp('(?:^|; )' + name.replace(/([.$?*|{}()\\[\\]\\\\\\\\+^)/g,'\\$1') + '=([^;]*)'));
+    return m ? decodeURIComponent(m[1]) : null;
+  }
+  function resolveDeviceKey() {
+    try {
+      const sp = new URLSearchParams(location.search);
+      const fromUrl = sp.get('deviceKey') || sp.get('key');
+      if (fromUrl) return fromUrl;
+    } catch {}
+    try {
+      const ls = localStorage || null;
+      const ss = sessionStorage || null;
+      const candidates = [
+        ls && ls.getItem('deviceKey'),
+        ls && ls.getItem('device_key'),
+        ls && ls.getItem('currentDeviceKey'),
+        ls && ls.getItem('studentDeviceKey'),
+        ss && ss.getItem('deviceKey'),
+        ss && ss.getItem('device_key'),
+        window.currentDeviceKey,
+        window.deviceKey,
+        getCookie('device_key')
+      ].filter(Boolean);
+      return candidates[0] || null;
+    } catch {
+      return window.currentDeviceKey || null;
+    }
+  }
+
+  const resolvedKey = resolveDeviceKey();
+  const keyEl = document.getElementById('current-device-key');
+  if (keyEl) {
+    keyEl.textContent = resolvedKey ? `Key: ${resolvedKey}` : 'Key: —';
+    keyEl.title = resolvedKey ? 'Current device key detected from this browser' : 'No device key found in this browser';
+  }
+
   const adminDlg = document.getElementById('device-admin-dialog');
   const adminClose = document.getElementById('device-admin-close');
   const adminCopy = document.getElementById('admin-copy-device-key');
