@@ -1,3 +1,28 @@
+// roster-manager.js
+
+// Add this code at the very top of your file
+import { useEffect } from 'react';
+import { useRouter } from 'next/router';
+
+const RosterPage = () => {
+    const router = useRouter();
+
+    useEffect(() => {
+        // Check for the security flag in local storage
+        const isSupervisor = localStorage.getItem('isSupervisor');
+        if (!isSupervisor) {
+            // If the flag is not set, redirect to the login form
+            router.push('/login'); // Replace '/login' with the path to your magic number form page
+        }
+    }, [router]);
+
+    // The rest of your existing roster page code goes here...
+};
+
+export default RosterPage;
+
+// ... Your existing JavaScript code for the roster page continues below
+
 // Supabase client initialization
 const supabaseUrl = "https://bhfgcmknhrilmevclmye.supabase.co";
 const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJoZmdjbWtuaHJpbG1ldmNsbXllIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMyNzM2ODMsImV4cCI6MjA2ODg0OTY4M30.1jWsjTGwhrcHeQrLritZODyaEl98vWRmNq0_slSMEzk";
