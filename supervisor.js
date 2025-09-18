@@ -1,28 +1,3 @@
-// supervisor.js
-
-// Add this code at the very top of your file
-import { useEffect } from 'react';
-import { useRouter } from 'next/router';
-
-const SupervisorPage = () => {
-    const router = useRouter();
-
-    useEffect(() => {
-        // Check for the security flag in local storage
-        const isSupervisor = localStorage.getItem('isSupervisor');
-        if (!isSupervisor) {
-            // If the flag is not set, redirect to the login form
-            router.push('/login'); // Replace '/login' with the path to your magic number form page
-        }
-    }, [router]);
-
-    // The rest of your existing supervisor page code goes here...
-};
-
-export default SupervisorPage;
-
-// ... Your existing JavaScript code for the supervisor page continues below
-
 //push trigger 8/5 5:30 AM
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.47.10?bundle&target=es2020";
