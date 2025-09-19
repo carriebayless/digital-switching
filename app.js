@@ -841,7 +841,7 @@ async function openRoomOverlayForStudent(student) {
       btn.style.margin = '0.35rem auto';
       btn.style.boxSizing = 'border-box';
       btn.style.width = '100%';
-      btn.style.padding = '1.5rem 1rem';
+      btn.style.padding = '2rem 1rem';
       btn.style.fontSize = '1.1rem';
       btn.style.border = 'none';
       btn.style.borderRadius = '9999px';
@@ -868,7 +868,7 @@ async function openRoomOverlayForStudent(student) {
       activityBtn.style.margin = '0.35rem auto';
       activityBtn.style.boxSizing = 'border-box';
       activityBtn.style.width = '100%';
-      activityBtn.style.padding = '0.9rem 1rem';
+      activityBtn.style.padding = '2rem 1rem';
       activityBtn.style.fontSize = '1.1rem';
       activityBtn.style.border = 'none';
       activityBtn.style.borderRadius = '9999px';
@@ -896,7 +896,7 @@ async function openRoomOverlayForStudent(student) {
     goneBtn.style.margin = '0.35rem auto';
     goneBtn.style.boxSizing = 'border-box';
     goneBtn.style.width = '100%';
-    goneBtn.style.padding = '0.9rem 1rem';
+    goneBtn.style.padding = '2rem 1rem';
     goneBtn.style.fontSize = '1.1rem';
     goneBtn.style.border = 'none';
     goneBtn.style.borderRadius = '9999px';
