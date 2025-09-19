@@ -841,7 +841,7 @@ async function openRoomOverlayForStudent(student) {
       btn.style.margin = '0.35rem auto';
       btn.style.boxSizing = 'border-box';
       btn.style.width = '100%';
-      btn.style.padding = '0.9rem 1rem';
+      btn.style.padding = '0.9rem 2rem';
       btn.style.fontSize = '1.1rem';
       btn.style.border = 'none';
       btn.style.borderRadius = '9999px';
