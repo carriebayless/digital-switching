@@ -3,6 +3,106 @@ const supabaseUrl = "https://bhfgcmknhrilmevclmye.supabase.co";
 const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJoZmdjbWtuaHJpbG1ldmNsbXllIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMyNzM2ODMsImV4cCI6MjA2ODg0OTY4M30.1jWsjTGwhrcHeQrLritZODyaEl98vWRmNq0_slSMEzk";
 const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
 
+/* --- Authentication helpers --- */
+async function checkAuth() {
+  try {
+    const resp = await fetch('/api/verify', { method: 'GET', credentials: 'same-origin' });
+    if (!resp.ok) return false;
+    const j = await resp.json();
+    return !!j.ok;
+  } catch (e) {
+    console.error('checkAuth error', e);
+    return false;
+  }
+}
+
+function showLoginModal() {
+  // If modal already present, do nothing
+  if (document.getElementById('magic-overlay')) return;
+
+  const overlay = document.createElement('div');
+  overlay.id = 'magic-overlay';
+  overlay.innerHTML = `
+    <div id="magic-modal" style="position:fixed;left:0;top:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.5);z-index:9999;">
+      <div style="background:white;padding:20px;border-radius:8px;max-width:420px;width:90%;box-shadow:0 6px 18px rgba(0,0,0,0.2);">
+        <h2 style="margin-top:0">Supervisor Access</h2>
+        <p>Enter the supervisor security number to continue.</p>
+        <input id="magic-input" type="password" inputmode="numeric" pattern="[0-9]*" placeholder="Security number" style="font-size:16px;padding:8px;width:100%;box-sizing:border-box;margin-bottom:10px;" />
+        <div style="display:flex;gap:8px;justify-content:flex-end;">
+          <button id="magic-cancel" style="padding:8px 12px;">Cancel</button>
+          <button id="magic-submit" style="padding:8px 12px;">Submit</button>
+        </div>
+        <div id="magic-error" style="color:red;margin-top:8px;display:none;"></div>
+      </div>
+    </div>`;
+
+  document.body.appendChild(overlay);
+
+  const input = document.getElementById('magic-input');
+  const errorEl = document.getElementById('magic-error');
+
+  function showError(msg) {
+    errorEl.textContent = msg;
+    errorEl.style.display = 'block';
+  }
+
+  document.getElementById('magic-submit').addEventListener('click', async () => {
+    const val = input.value.trim();
+    if (!val) { showError('Please enter the security number'); return; }
+
+    try {
+      const resp = await fetch('/api/login', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ magicNumber: val })
+      });
+
+      if (resp.ok) {
+        const j = await resp.json();
+        if (j.ok) {
+          // success — remove modal and load roster
+          document.body.removeChild(overlay);
+          // call your existing renderer
+          renderRosterTable();
+          return;
+        }
+      }
+
+      // show error on failure
+      showError('Invalid security number. If you continue to have trouble, contact the admin.');
+    } catch (err) {
+      console.error('login fetch error', err);
+      showError('Network error. Try again or contact admin.');
+    }
+  });
+
+  document.getElementById('magic-cancel').addEventListener('click', () => {
+    showError('Access canceled. You cannot view this page without supervisor access.');
+  });
+}
+
+/* optional: small helper to add a "Logout" button (call this after page is authenticated) */
+function addLogoutButton(containerEl) {
+  // containerEl — DOM element where you'd like the logout button to appear
+  if (!containerEl) return;
+  let btn = document.getElementById('supervisor-logout-btn');
+  if (!btn) {
+    btn = document.createElement('button');
+    btn.id = 'supervisor-logout-btn';
+    btn.textContent = 'Logout';
+    btn.style.marginLeft = '8px';
+    btn.addEventListener('click', async () => {
+      await fetch('/api/logout', { method: 'POST', credentials: 'same-origin' });
+      location.reload();
+    });
+    containerEl.appendChild(btn);
+  }
+}
+
+
+
+
 document.addEventListener('DOMContentLoaded', () => {
   const tableContainer = document.getElementById('roster-table-container');
   let isEditing = false;
@@ -781,3 +881,14 @@ document.addEventListener('DOMContentLoaded', () => {
     })
     .subscribe();
 });
+// instead of calling renderRosterTable() immediately:
+(async function initAuthThenRender() {
+  const ok = await checkAuth();
+  if (ok) {
+    // Optionally place logout button into page header/container:
+    addLogoutButton(document.getElementById('header') || document.body);
+    renderRosterTable();
+  } else {
+    showLoginModal();
+  }
+})();
