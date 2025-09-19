@@ -767,24 +767,6 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 // roster.js
 
-async function login() {
-  const res = await fetch("/api/login", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ username: "test", password: "secret" })
-  });
-  const data = await res.json();
-  console.log("Login response:", data);
-
-  if (data.ok) {
-    // Store session token in localStorage so we can verify later
-    localStorage.setItem("session", data.session);
-    alert("Login successful!");
-  } else {
-    alert("Login failed!");
-  }
-}
-
   
   // Initial Render
   renderRosterTable();
