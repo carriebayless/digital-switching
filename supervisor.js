@@ -14,47 +14,59 @@ const rowCache = new Map();
 // supervisor.js
 
 const MAGIC_NUMBER = "1234"; // ⚠️ Replace with your actual magic number
-const IS_SUPERVISOR_KEY = "isSupervisorAuthenticated"; // localStorage key
+const IS_SUPERVISOR_KEY = "isSupervisorAuthenticated";
 
 document.addEventListener("DOMContentLoaded", () => {
-  const authContainer = document.getElementById("auth-container");
-  const dashboardContent = document.getElementById("dashboard-content");
-
-  // Check if the user is already authenticated
-  const isAuthenticated = localStorage.getItem(IS_SUPERVISOR_KEY) === "true";
-
-  if (isAuthenticated) {
-    authContainer.style.display = "none";
-    dashboardContent.style.display = "block";
-    // Now you can run the rest of your dashboard's code.
-    initializeDashboard(); // This function will contain your existing logic
-  } else {
-    authContainer.style.display = "block";
-    dashboardContent.style.display = "none";
-    // Handle the magic number login process
+    const magicNumberOverlay = document.getElementById("magic-number-overlay");
     const magicNumberInput = document.getElementById("magic-number-input");
     const magicNumberBtn = document.getElementById("magic-number-btn");
     const magicNumberError = document.getElementById("magic-number-error");
 
-    magicNumberBtn.addEventListener("click", () => {
-      if (magicNumberInput.value === MAGIC_NUMBER) {
-        localStorage.setItem(IS_SUPERVISOR_KEY, "true");
-        // Reload the page to trigger the authenticated view
-        window.location.reload();
-      } else {
-        magicNumberError.textContent = "Incorrect magic number.";
-        magicNumberError.style.display = "block";
-      }
-    });
+    // Check localStorage on page load
+    const isAuthenticated = localStorage.getItem(IS_SUPERVISOR_KEY) === "true";
 
-    magicNumberInput.addEventListener("keypress", (e) => {
-      if (e.key === "Enter") {
-        magicNumberBtn.click();
-      }
-    });
-  }
+    if (isAuthenticated) {
+        // If authenticated, hide the overlay immediately
+        magicNumberOverlay.style.display = "none";
+        // Then, run the rest of your dashboard code
+        initializeDashboard();
+    } else {
+        // If not authenticated, the overlay is already visible
+        // Set up the event listeners for the login form
+        magicNumberBtn.addEventListener("click", () => {
+            if (magicNumberInput.value === MAGIC_NUMBER) {
+                // On success, hide the overlay
+                magicNumberOverlay.style.display = "none";
+                // And save the session, then initialize the dashboard
+                localStorage.setItem(IS_SUPERVISOR_KEY, "true");
+                initializeDashboard();
+            } else {
+                magicNumberError.textContent = "Incorrect magic number.";
+                magicNumberError.style.display = "block";
+            }
+        });
+
+        magicNumberInput.addEventListener("keypress", (e) => {
+            if (e.key === "Enter") {
+                magicNumberBtn.click();
+            }
+        });
+    }
 });
 
+// Wrap all your existing dashboard logic in this function
+function initializeDashboard() {
+    // === PASTE ALL YOUR EXISTING DASHBOARD CODE HERE ===
+    // This includes all your variables, supabase client, and functions
+    // like renderRooms(), updateMaxCounts(), etc.
+    // Make sure to remove any existing `DOMContentLoaded` listener from this code block.
+    // For example:
+    // const supabaseClient = window.supabase.createClient(...);
+    // const roomsTable = document.getElementById('room-table');
+    // async function renderRooms() { ... }
+    // document.getElementById('add-room-fab').addEventListener('click', () => { ... });
+    // renderRooms(); // Initial call to your rendering function
+}
 
 
 // --- Normalize site value (supports legacy stored values like "site|Fieldstone Elementary")
