@@ -113,61 +113,13 @@
   #session-tab-container { margin-bottom: 24px; }
 
 
-  /* New styles for the overlay */
-        #magic-number-overlay {
-            display: flex; /* Initially show as a flexbox to center content */
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            background-color: rgba(0, 0, 0, 0.8);
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-        }
 
-        #magic-number-overlay .overlay-content {
-            background-color: #ffffff;
-            padding: 30px;
-            border-radius: 10px;
-            text-align: center;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-        }
-
-        #magic-number-overlay input {
-            padding: 10px;
-            margin: 10px 0;
-            width: 200px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-        }
-
-        #magic-number-overlay button {
-            padding: 10px 20px;
-            border: none;
-            background-color: #007bff;
-            color: white;
-            border-radius: 5px;
-            cursor: pointer;
-        }
 </style>
 
 </head>
 <body>
 
-<div id="magic-number-overlay">
-        <div class="overlay-content">
-            <h2>Enter Magic Number</h2>
-            <input type="password" id="magic-number-input" placeholder="••••" autocomplete="off" />
-            <button id="magic-number-btn">Enter</button>
-            <p id="magic-number-error" style="color:red; display:none; margin-top:10px;"></p>
-        </div>
-    </div>
 
-    <div id="nav-bar" class="top-nav">
-        </div>
-    <script type="module" src="supervisor.js"></script>
   
   <!-- Supervisor navigation bar -->
   <div id="nav-bar" class="top-nav">
