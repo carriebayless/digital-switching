@@ -6,7 +6,67 @@
   <title>Supervisor Dashboard</title>
   <link rel="stylesheet" href="style.css" />
   
+<!-- supervisor.html -->
 
+<!-- Optional: place this in <head> or before your main script -->
+<script>
+  // Helper to load JS dynamically and catch errors
+  function loadScript(url) {
+    return new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = url;
+      script.defer = true;
+      script.onload = () => resolve(url);
+      script.onerror = () => {
+        console.error(`Failed to load script: ${url}`);
+        reject(new Error(`Script load failed: ${url}`));
+      };
+      document.head.appendChild(script);
+    });
+  }
+
+  async function loadRequiredScripts() {
+    try {
+      // Try loading auth.js first
+      await loadScript('auth.js');
+      console.log('auth.js loaded');
+
+      // Then roster.js
+      await loadScript('roster.js');
+      console.log('roster.js loaded');
+
+      // Finally your main supervisor.js (or inline code)
+      await loadScript('supervisor.js');
+      console.log('supervisor.js loaded');
+
+      // Start your dashboard init
+      if (typeof initDashboardAuth === 'function') {
+        initDashboardAuth();
+      } else {
+        console.warn('initDashboardAuth is not defined; check supervisor.js');
+      }
+
+    } catch (err) {
+      // Show a visible error on the page instead of blank
+      document.body.innerHTML = `
+        <div style="padding: 20px; background: #fdd; color: #900; font-family: sans-serif;">
+          <h2>Error loading scripts</h2>
+          <p>${err.message}</p>
+        </div>
+      `;
+    }
+  }
+
+  // Load scripts after DOM is ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', loadRequiredScripts);
+  } else {
+    loadRequiredScripts();
+  }
+</script>
+
+
+  
 <style>
   #room-table {
     border-collapse: collapse;
