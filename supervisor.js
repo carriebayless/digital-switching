@@ -11,6 +11,52 @@ window.supabase = supabase;
 
 const rowCache = new Map();
 
+// supervisor.js
+
+const MAGIC_NUMBER = "1234"; // ⚠️ Replace with your actual magic number
+const IS_SUPERVISOR_KEY = "isSupervisorAuthenticated"; // localStorage key
+
+document.addEventListener("DOMContentLoaded", () => {
+  const authContainer = document.getElementById("auth-container");
+  const dashboardContent = document.getElementById("dashboard-content");
+
+  // Check if the user is already authenticated
+  const isAuthenticated = localStorage.getItem(IS_SUPERVISOR_KEY) === "true";
+
+  if (isAuthenticated) {
+    authContainer.style.display = "none";
+    dashboardContent.style.display = "block";
+    // Now you can run the rest of your dashboard's code.
+    initializeDashboard(); // This function will contain your existing logic
+  } else {
+    authContainer.style.display = "block";
+    dashboardContent.style.display = "none";
+    // Handle the magic number login process
+    const magicNumberInput = document.getElementById("magic-number-input");
+    const magicNumberBtn = document.getElementById("magic-number-btn");
+    const magicNumberError = document.getElementById("magic-number-error");
+
+    magicNumberBtn.addEventListener("click", () => {
+      if (magicNumberInput.value === MAGIC_NUMBER) {
+        localStorage.setItem(IS_SUPERVISOR_KEY, "true");
+        // Reload the page to trigger the authenticated view
+        window.location.reload();
+      } else {
+        magicNumberError.textContent = "Incorrect magic number.";
+        magicNumberError.style.display = "block";
+      }
+    });
+
+    magicNumberInput.addEventListener("keypress", (e) => {
+      if (e.key === "Enter") {
+        magicNumberBtn.click();
+      }
+    });
+  }
+});
+
+
+
 // --- Normalize site value (supports legacy stored values like "site|Fieldstone Elementary")
 function normalizeSite(raw) {
   if (!raw) return '';
