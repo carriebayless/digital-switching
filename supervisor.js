@@ -11,7 +11,7 @@ window.supabase = supabase;
 
 const rowCache = new Map();
 
-
+function initDashboardWidgets() {}
 
 // --- Normalize site value (supports legacy stored values like "site|Fieldstone Elementary")
 function normalizeSite(raw) {
@@ -2166,7 +2166,7 @@ async function loadRoomsForSite(site) {
 (async function initDashboardAuth() {
   const ok = await checkAuth(); // uses the same checkAuth() you already wrote
   if (ok) {
-    addLogoutButton(document.getElementById('header') || document.body);
+    addLogoutButton(document.getElementById('nav-bar') || document.body);
     document.getElementById('dashboard-content').style.display = 'block';
     // Optionally, call any dashboard-specific init functions here
     initDashboardWidgets(); // example
