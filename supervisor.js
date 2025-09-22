@@ -2163,14 +2163,4 @@ async function loadRoomsForSite(site) {
     // Important: do NOT call renderSession/loadDashboard here; callers handle that when needed.
   }
 }
-(async function initDashboardAuth() {
-  const ok = await checkAuth(); // uses the same checkAuth() you already wrote
-  if (ok) {
-    addLogoutButton(document.getElementById('nav-bar') || document.body);
-    document.getElementById('dashboard-content').style.display = 'block';
-    // Optionally, call any dashboard-specific init functions here
-    initDashboardWidgets(); // example
-  } else {
-    showLoginModal(); // will block access until supervisor number entered
-  }
-})();
+
