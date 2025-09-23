@@ -11,6 +11,29 @@ window.supabase = supabase;
 
 const rowCache = new Map();
 
+async function checkMagic() {
+  try {
+    const res = await fetch("/api/magic-verify");
+    const data = await res.json();
+    if (!data.ok) {
+      // redirect to magic number login page
+      window.location.href = "/magic-login"; 
+    }
+  } catch (err) {
+    console.error("Magic verification failed", err);
+    window.location.href = "/magic-login";
+  }
+}
+
+// Run immediately
+checkMagic();
+
+async function logout() {
+  await fetch("/api/magic-logout"); // Use the logout API you shared
+  window.location.href = "/magic-login";
+}
+
+
 function initDashboardWidgets() {}
 
 // --- Normalize site value (supports legacy stored values like "site|Fieldstone Elementary")
