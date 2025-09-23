@@ -88,18 +88,42 @@ function showLoginModal() {
 
 function addLogoutButton(containerEl) {
   if (!containerEl) return;
+
+  // Avoid adding multiple buttons
   let btn = document.getElementById('supervisor-logout-btn');
   if (!btn) {
     btn = document.createElement('button');
     btn.id = 'supervisor-logout-btn';
     btn.textContent = 'Logout';
+
+    // Style to match dashboard header
+    btn.style.padding = '6px 12px';
+    btn.style.background = '#007bff';
+    btn.style.color = '#fff';
+    btn.style.border = 'none';
+    btn.style.borderRadius = '4px';
+    btn.style.cursor = 'pointer';
+    btn.style.fontSize = '14px';
+    btn.style.fontWeight = 'bold';
+    btn.style.transition = 'background 0.2s';
+
+    btn.addEventListener('mouseenter', () => btn.style.background = '#0056b3');
+    btn.addEventListener('mouseleave', () => btn.style.background = '#007bff');
+
+    // Logout functionality
     btn.addEventListener('click', async () => {
       await fetch('/api/logout', { method: 'POST', credentials: 'same-origin' });
       location.reload();
     });
+
     containerEl.appendChild(btn);
+
+    // Ensure container uses flex so button aligns nicely
+    containerEl.style.display = 'flex';
+    containerEl.style.alignItems = 'center';
   }
 }
+
 
 
 
@@ -107,12 +131,17 @@ function addLogoutButton(containerEl) {
 (async function initAuthThenRender() {
   const ok = await checkAuth();
   if (ok) {
-    addLogoutButton(document.getElementById('header') || document.body);
-    renderSupervisorDashboard(); // your existing function to load dashboard
+    // Add the logout button to the container
+    addLogoutButton(document.getElementById('supervisor-logout-container'));
+
+    // Render the page-specific content
+    if (typeof renderSupervisorDashboard === 'function') renderSupervisorDashboard();
+    if (typeof renderRosterTable === 'function') renderRosterTable();
   } else {
     showLoginModal();
   }
 })();
+
 
 
 
