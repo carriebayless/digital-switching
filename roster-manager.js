@@ -886,7 +886,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const ok = await checkAuth();
   if (ok) {
     // Optionally place logout button into page header/container:
-    addLogoutButton(document.getElementById('header') || document.body);
+    addLogoutButton(document.getElementById('supervisor-logout-container') || document.getElementById('nav-bar') || document.body);
     renderRosterTable();
   } else {
     showLoginModal();
