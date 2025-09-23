@@ -2274,3 +2274,13 @@ async function loadRoomsForSite(site) {
   }
 }
 
+(async function initAuthThenRender() {
+  const ok = await checkAuth();
+  if (ok) {
+    // Optionally place logout button into page header/container:
+    addLogoutButton(document.getElementById('header') || document.body);
+    renderSupervisorDashboard();
+  } else {
+    showLoginModal();
+  }
+})();
