@@ -79,6 +79,23 @@ h1 {
 }
 /* END MODIFIED CODE */
 
+#supervisor-logout-btn {
+  padding: 6px 12px;
+  font-size: 0.9rem;
+  font-weight: bold;
+  background-color: #0b3d91; /* deep blue to match your dashboard */
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+#supervisor-logout-btn:hover {
+  background-color: #06275c; /* slightly darker on hover */
+}
+
+
 #grade-tabs {
     display: flex;
     justify-content: center;
