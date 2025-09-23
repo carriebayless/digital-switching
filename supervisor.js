@@ -11,16 +11,6 @@ window.supabase = supabase;
 
 const rowCache = new Map();
 
-(async function initDashboard() {
-  const authorized = await checkAuth();
-  if (authorized) {
-    renderSupervisorDashboard();
-  } else {
-    showLoginModal();
-  }
-})();
-
-
 
 /* --- Authentication helpers --- */
 async function checkAuth() {
