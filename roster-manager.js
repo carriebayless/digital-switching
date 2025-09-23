@@ -83,8 +83,6 @@ function showLoginModal() {
 }
 
 /* optional: small helper to add a "Logout" button (call this after page is authenticated) */
-// Call this after checking authentication
-addLogoutButton(document.getElementById('supervisor-logout-container'));
 
 function addLogoutButton(containerEl) {
   if (!containerEl) return;
