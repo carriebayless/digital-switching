@@ -26,7 +26,6 @@ async function checkAuth() {
 }
 
 function showLoginModal() {
-  // If modal already present, do nothing
   if (document.getElementById('magic-overlay')) return;
 
   const overlay = document.createElement('div');
@@ -70,16 +69,12 @@ function showLoginModal() {
       if (resp.ok) {
         const j = await resp.json();
         if (j.ok) {
-          // success — remove modal and load roster
           document.body.removeChild(overlay);
-          // call your existing renderer
-          initDashboardWidgets(); 
+          renderSupervisorDashboard();
           return;
         }
       }
-
-      // show error on failure
-      showError('Invalid security number. If you continue to have trouble, contact the admin.');
+      showError('Invalid security number. Contact admin if issue persists.');
     } catch (err) {
       console.error('login fetch error', err);
       showError('Network error. Try again or contact admin.');
@@ -91,9 +86,7 @@ function showLoginModal() {
   });
 }
 
-/* optional: small helper to add a "Logout" button (call this after page is authenticated) */
 function addLogoutButton(containerEl) {
-  // containerEl — DOM element where you'd like the logout button to appear
   if (!containerEl) return;
   let btn = document.getElementById('supervisor-logout-btn');
   if (!btn) {
@@ -108,6 +101,17 @@ function addLogoutButton(containerEl) {
     containerEl.appendChild(btn);
   }
 }
+
+/* --- Initialize page with auth check --- */
+(async function initAuthThenRender() {
+  const ok = await checkAuth();
+  if (ok) {
+    addLogoutButton(document.getElementById('header') || document.body);
+    renderSupervisorDashboard(); // your existing function to load dashboard
+  } else {
+    showLoginModal();
+  }
+})();
 
 
 
@@ -2264,13 +2268,4 @@ async function loadRoomsForSite(site) {
   }
 }
 
-(async function initAuthThenRender() {
-  const ok = await checkAuth();
-  if (ok) {
-    // Optionally place logout button into page header/container:
-    addLogoutButton(document.getElementById('header') || document.body);
-    renderSupervisorDashboard();
-  } else {
-    showLoginModal();
-  }
-})();
+
