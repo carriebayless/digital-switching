@@ -98,7 +98,7 @@ function addLogoutButton(containerEl) {
     btn.id = 'supervisor-logout-btn';
     btn.textContent = 'Logout';
 
-    btn.style.padding = '6px 12px';
+    btn.style.padding = '10px 15px';
     btn.style.background = '#007bff';
     btn.style.color = '#fff';
     btn.style.border = 'none';
