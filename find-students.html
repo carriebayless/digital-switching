@@ -11,10 +11,15 @@
 </head>
 <body>
   <!-- Supervisor navigation bar -->
-  <div id="nav-bar" style="display:flex; justify-content:flex-end; gap:10px; padding:10px; background:#f9f9f9; border-bottom:1px solid #ccc;">
-    <button onclick="window.location.href='supervisor.html'" class="nav-button">Supervisor Dashboard</button>
-    <button onclick="window.location.href='roster-manager.html'" class="nav-button">Roster Manager</button>
-  </div>
+  <div id="nav-bar" class="top-nav" style="display:flex; align-items:center; gap:8px; padding:8px 12px; background:#f5f5f5; border-bottom:1px solid #ddd;">
+  <button onclick="window.location.href='index.html'" class="nav-button">Student Screen</button>
+  <button onclick="window.location.href='find-students.html'" class="nav-button">Find Students</button>
+  <button onclick="window.location.href='roster-manager.html'" class="nav-button">Roster Manager</button>
+
+  <!-- Logout button container, aligns right -->
+  <div id="supervisor-logout-container" style="margin-left:auto;"></div>
+</div>
+
 
   <main style="padding:1rem; max-width: 960px; margin: auto;">
 
