@@ -88,19 +88,44 @@ function showLoginModal() {
 
 function addLogoutButton(containerEl) {
   if (!containerEl) return;
+
+  // Avoid adding multiple buttons
   let btn = document.getElementById('supervisor-logout-btn');
   if (!btn) {
     btn = document.createElement('button');
     btn.id = 'supervisor-logout-btn';
     btn.textContent = 'Logout';
-    btn.style.marginLeft = '8px';
+
+    // Style it nicely to match a dashboard header
+    btn.style.padding = '6px 12px';
+    btn.style.marginLeft = 'auto';      // push to the right
+    btn.style.background = '#007bff';
+    btn.style.color = '#fff';
+    btn.style.border = 'none';
+    btn.style.borderRadius = '4px';
+    btn.style.cursor = 'pointer';
+    btn.style.fontSize = '14px';
+    btn.style.fontWeight = 'bold';
+    btn.style.transition = 'background 0.2s';
+    
+    // Hover effect
+    btn.addEventListener('mouseenter', () => btn.style.background = '#0056b3');
+    btn.addEventListener('mouseleave', () => btn.style.background = '#007bff');
+
+    // Logout functionality
     btn.addEventListener('click', async () => {
       await fetch('/api/logout', { method: 'POST', credentials: 'same-origin' });
       location.reload();
     });
+
     containerEl.appendChild(btn);
+
+    // Ensure the container uses flex so button aligns nicely
+    containerEl.style.display = 'flex';
+    containerEl.style.alignItems = 'center';
   }
 }
+
 
 /* --- Initialize page with auth check --- */
 (async function initAuthThenRender() {
