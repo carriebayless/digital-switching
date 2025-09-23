@@ -12,7 +12,7 @@ window.supabase = supabase;
 const rowCache = new Map();
 
 
-/* --- Authentication helpers --- */
+// --- Authentication helpers ---
 async function checkAuth() {
   try {
     const resp = await fetch('/api/verify', { method: 'GET', credentials: 'same-origin' });
@@ -70,10 +70,12 @@ function showLoginModal() {
         const j = await resp.json();
         if (j.ok) {
           document.body.removeChild(overlay);
-          renderSupervisorDashboard();
+          // After login, init the page
+          initAuthThenRender();
           return;
         }
       }
+
       showError('Invalid security number. Contact admin if issue persists.');
     } catch (err) {
       console.error('login fetch error', err);
@@ -86,17 +88,16 @@ function showLoginModal() {
   });
 }
 
+// --- Logout button ---
 function addLogoutButton(containerEl) {
   if (!containerEl) return;
 
-  // Avoid adding multiple buttons
   let btn = document.getElementById('supervisor-logout-btn');
   if (!btn) {
     btn = document.createElement('button');
     btn.id = 'supervisor-logout-btn';
     btn.textContent = 'Logout';
 
-    // Style to match dashboard header
     btn.style.padding = '6px 12px';
     btn.style.background = '#007bff';
     btn.style.color = '#fff';
@@ -110,7 +111,6 @@ function addLogoutButton(containerEl) {
     btn.addEventListener('mouseenter', () => btn.style.background = '#0056b3');
     btn.addEventListener('mouseleave', () => btn.style.background = '#007bff');
 
-    // Logout functionality
     btn.addEventListener('click', async () => {
       await fetch('/api/logout', { method: 'POST', credentials: 'same-origin' });
       location.reload();
@@ -118,29 +118,28 @@ function addLogoutButton(containerEl) {
 
     containerEl.appendChild(btn);
 
-    // Ensure container uses flex so button aligns nicely
     containerEl.style.display = 'flex';
     containerEl.style.alignItems = 'center';
   }
 }
 
-
-
-
-/* --- Initialize page with auth check --- */
-(async function initAuthThenRender() {
+// --- Initialize page after authentication ---
+async function initAuthThenRender() {
   const ok = await checkAuth();
   if (ok) {
-    // Add the logout button to the container
     addLogoutButton(document.getElementById('supervisor-logout-container'));
 
-    // Render the page-specific content
+    // Call page-specific renderers
     if (typeof renderSupervisorDashboard === 'function') renderSupervisorDashboard();
     if (typeof renderRosterTable === 'function') renderRosterTable();
   } else {
     showLoginModal();
   }
-})();
+}
+
+// --- Run immediately ---
+initAuthThenRender();
+
 
 
 
