@@ -14,11 +14,14 @@ const rowCache = new Map();
 (async function initDashboard() {
   const authorized = await checkAuth();
   if (authorized) {
+    console.log("User authorized, rendering dashboard");
     renderSupervisorDashboard();
   } else {
+    console.log("User NOT authorized, showing login modal");
     showLoginModal();
   }
 })();
+
 
 /* --- Authentication helpers --- */
 async function checkAuth() {
