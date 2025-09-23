@@ -99,7 +99,7 @@ function addLogoutButton(containerEl) {
     btn.textContent = 'Logout';
 
     btn.style.padding = '10px 15px';
-    btn.style.background = '#007bff';
+    btn.style.background = '#ffe6e6';
     btn.style.color = '#fff';
     btn.style.border = 'none';
     btn.style.borderRadius = '4px';
@@ -109,7 +109,7 @@ function addLogoutButton(containerEl) {
     btn.style.transition = 'background 0.2s';
 
     btn.addEventListener('mouseenter', () => btn.style.background = '#0056b3');
-    btn.addEventListener('mouseleave', () => btn.style.background = '#007bff');
+    btn.addEventListener('mouseleave', () => btn.style.background = '#ffe6e6');
 
     btn.addEventListener('click', async () => {
       await fetch('/api/logout', { method: 'POST', credentials: 'same-origin' });
