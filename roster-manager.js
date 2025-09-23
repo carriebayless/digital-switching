@@ -83,22 +83,30 @@ function showLoginModal() {
 }
 
 /* optional: small helper to add a "Logout" button (call this after page is authenticated) */
+// Call this after checking authentication
+addLogoutButton(document.getElementById('supervisor-logout-container'));
+
 function addLogoutButton(containerEl) {
-  // containerEl — DOM element where you'd like the logout button to appear
   if (!containerEl) return;
+
   let btn = document.getElementById('supervisor-logout-btn');
   if (!btn) {
     btn = document.createElement('button');
     btn.id = 'supervisor-logout-btn';
     btn.textContent = 'Logout';
-    btn.style.marginLeft = '8px';
     btn.addEventListener('click', async () => {
       await fetch('/api/logout', { method: 'POST', credentials: 'same-origin' });
       location.reload();
     });
+
     containerEl.appendChild(btn);
+
+    // Ensure the container uses flex so the button stays aligned right
+    containerEl.style.display = 'flex';
+    containerEl.style.alignItems = 'center';
   }
 }
+
 
 
 
