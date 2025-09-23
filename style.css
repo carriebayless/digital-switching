@@ -79,22 +79,6 @@ h1 {
 }
 /* END MODIFIED CODE */
 
-#supervisor-logout-btn {
-  padding: 6px 12px;
-  font-size: 0.9rem;
-  font-weight: bold;
-  background-color: #0b3d91; /* deep blue to match your dashboard */
-  color: white;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-#supervisor-logout-btn:hover {
-  background-color: #06275c; /* slightly darker on hover */
-}
-
 
 #grade-tabs {
     display: flex;
@@ -455,6 +439,27 @@ h1 {
   outline: none;
   box-shadow: 0 2px 8px rgba(0,0,0,0.08);
 }
+
+
+/* Supervisor Logout Button - consistent with dashboard */
+#supervisor-logout-btn {
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: bold;
+  background-color: #3467eb; /* deep blue */
+  border: 1px solid #3467eb;
+  color: #fff;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+#supervisor-logout-btn:hover {
+  background-color: #284bb7;
+  border: 1px solid #284bb7;
+}
+
 
 /* --- Roster Manager Specific Styles --- */
 .roster-manager-container {
