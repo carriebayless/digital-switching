@@ -882,13 +882,21 @@ document.addEventListener('DOMContentLoaded', () => {
     .subscribe();
 });
 // instead of calling renderRosterTable() immediately:
+// Immediately invoked function to check auth and initialize page
 (async function initAuthThenRender() {
-  const ok = await checkAuth();
-  if (ok) {
-    // Optionally place logout button into page header/container:
-    addLogoutButton(document.getElementById('supervisor-logout-container') || document.getElementById('nav-bar') || document.body);
-    renderRosterTable();
+  const authorized = await checkAuth();
+  if (authorized) {
+    // Add logout button to the container on this page
+    addLogoutButton(document.getElementById('supervisor-logout-container'));
+
+    // Call the page-specific render function
+    // Replace this with your actual render function, e.g., renderRosterTable() or renderSupervisorDashboard()
+    if (typeof renderRosterTable === 'function') renderRosterTable();
+    if (typeof renderSupervisorDashboard === 'function') renderSupervisorDashboard();
+
   } else {
+    // Show the login modal if not authorized
     showLoginModal();
   }
 })();
+
