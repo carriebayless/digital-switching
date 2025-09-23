@@ -107,7 +107,7 @@ function addLogoutButton(containerEl) {
 (async function initAuthThenRender() {
   const ok = await checkAuth();
   if (ok) {
-    addLogoutButton(document.getElementById('supervisor-logout-container'));
+    addLogoutButton(document.getElementById('header') || document.body);
     renderSupervisorDashboard(); // your existing function to load dashboard
   } else {
     showLoginModal();
