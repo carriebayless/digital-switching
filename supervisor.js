@@ -104,11 +104,12 @@ function addLogoutButton(containerEl) {
 
     containerEl.appendChild(btn);
 
-    // Ensure the container uses flex for proper alignment
+    // Ensure the container uses flex so the button stays aligned right
     containerEl.style.display = 'flex';
     containerEl.style.alignItems = 'center';
   }
 }
+
 
 
 // --- Initialize page after authentication ---
