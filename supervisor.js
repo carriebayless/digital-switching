@@ -81,7 +81,7 @@ function showLoginModal() {
           // success — remove modal and load roster
           document.body.removeChild(overlay);
           // call your existing renderer
-          renderSupervisorDashboard();
+          initDashboardWidgets(); 
           return;
         }
       }
