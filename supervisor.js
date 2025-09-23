@@ -105,7 +105,7 @@ function addLogoutButton(containerEl) {
     btn.style.borderRadius = '4px';
     btn.style.cursor = 'pointer';
     btn.style.fontSize = '14px';
-    
+    btn.style.fontWeight = 'bold';
     btn.style.transition = 'background 0.2s';
 
     btn.addEventListener('mouseenter', () => btn.style.background = '#0056b3');
