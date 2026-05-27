@@ -910,7 +910,7 @@ async function openRoomOverlayForStudent(student) {
     goneBtn.textContent = `${goneStyle.icon ? goneStyle.icon + ' ' : ''}Gone`;
     goneBtn.addEventListener('click', () => markStudentGone(student.id));
     listEl.appendChild(goneBtn);
-  }
+  
 }
 
 // Server-authoritative room assignment using RPC (Option A)
