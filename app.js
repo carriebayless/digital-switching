@@ -806,33 +806,30 @@ async function openRoomOverlayForStudent(student) {
   if (titleEl) titleEl.textContent = `Hi, ${student.firstname}! Where would you like to go?`;
 
   listEl.innerHTML = 'Loading…';
-  overlayEl.classList.add('show'); // This uses the .show class from your CSS
+  overlayEl.classList.add('show');
 
   const [rooms, counts] = await Promise.all([
     fetchEligibleRooms(site, timeSlot),
     fetchRoomCounts(site)
   ]);
 
-  // --- THE FIX STARTS HERE ---
-  listEl.innerHTML = ''; // Clear "Loading..."
-  emptyEl.style.display = 'none'; // Always hide the standalone empty message
+  listEl.innerHTML = ''; 
+  if (emptyEl) emptyEl.style.display = 'none'; // Hide the old standalone message
 
+  // 1. FILTER AVAILABLE ROOMS
   const available = rooms.filter(r => (counts.get(r.room_name) || 0) < (r.capacity || 0));
 
-  // 1. If no rooms are available, put the message INSIDE the list so it doesn't break layout
+  // 2. SHOW ROOMS (OR FULL MESSAGE)
   if (available.length === 0) {
     const msg = document.createElement('div');
     msg.textContent = "All rooms are currently full.";
-    msg.style.padding = "20px";
-    msg.style.color = "#666";
-    msg.style.fontStyle = "italic";
+    msg.style.cssText = "padding: 20px; color: #666; font-style: italic; text-align: center;";
     listEl.appendChild(msg);
   } else {
-    // 2. Add available room buttons
     available.forEach(r => {
       const inRoom = counts.get(r.room_name) || 0;
       const btn = document.createElement('button');
-      btn.className = 'room-choice'; // Uses your CSS for layout
+      btn.className = 'room-choice';
       const style = resolveRoomStyle(r);
       btn.style.backgroundColor = style.bgColor;
       btn.style.color = style.textColor || '#000';
@@ -842,11 +839,13 @@ async function openRoomOverlayForStudent(student) {
     });
   }
 
-  // 3. UNIVERSAL BUTTONS (Always show these!)
+  // 3. UNIVERSAL BUTTONS (This code is now OUTSIDE the if/else logic)
+  // These will show up even if available.length is 0
   if (site === 'Club Knights') {
     const activityBtn = document.createElement('button');
     activityBtn.className = 'room-choice';
     activityBtn.style.backgroundColor = "#d9d9d9";
+    activityBtn.style.color = "#000";
     activityBtn.textContent = "🏛️ Activity in Building";
     activityBtn.onclick = () => markStudentActivityInBuilding(student.id);
     listEl.appendChild(activityBtn);
@@ -855,49 +854,9 @@ async function openRoomOverlayForStudent(student) {
   const goneBtn = document.createElement('button');
   goneBtn.className = 'room-choice';
   goneBtn.style.backgroundColor = "#d9d9d9";
+  goneBtn.style.color = "#000";
   goneBtn.textContent = "🚪 Gone";
   goneBtn.onclick = () => markStudentGone(student.id);
-  listEl.appendChild(goneBtn);
-}
-
-  // --- LOGIC GATE 2: UNIVERSAL BUTTONS (This is the fix!) ---
-  // We closed the "else" block above. 
-  // Everything below this line will appear even if available.length is 0.
-
-  if (site === 'Club Knights') {
-    const activityBtn = document.createElement('button');
-    activityBtn.className = 'room-choice';
-    const activityStyle = resolveRoomStyle({ room_name: 'Activity in Building', color_hex: '#d9d9d9', icon_emoji: '🏛️' });
-    activityBtn.style.backgroundColor = activityStyle.bgColor;
-    activityBtn.style.color = activityStyle.textColor || '#000';
-    activityBtn.style.display = 'block';
-    activityBtn.style.margin = '0.35rem auto';
-    activityBtn.style.width = '100%';
-    activityBtn.style.padding = '2rem 1rem';
-    activityBtn.style.fontSize = '1.1rem';
-    activityBtn.style.border = 'none';
-    activityBtn.style.borderRadius = '9999px';
-
-    activityBtn.textContent = `${activityStyle.icon ? activityStyle.icon + ' ' : ''}Activity in Building`;
-    activityBtn.addEventListener('click', () => markStudentActivityInBuilding(student.id));
-    listEl.appendChild(activityBtn);
-  }
-
-  const goneBtn = document.createElement('button');
-  goneBtn.className = 'room-choice';
-  const goneStyle = resolveRoomStyle({ room_name: 'Gone', color_hex: '#d9d9d9', icon_emoji: '🚪' });
-  goneBtn.style.backgroundColor = goneStyle.bgColor;
-  goneBtn.style.color = goneStyle.textColor || '#000';
-  goneBtn.style.display = 'block';
-  goneBtn.style.margin = '0.35rem auto';
-  goneBtn.style.width = '100%';
-  goneBtn.style.padding = '2rem 1rem';
-  goneBtn.style.fontSize = '1.1rem';
-  goneBtn.style.border = 'none';
-  goneBtn.style.borderRadius = '9999px';
-
-  goneBtn.textContent = `${goneStyle.icon ? goneStyle.icon + ' ' : ''}Gone`;
-  goneBtn.addEventListener('click', () => markStudentGone(student.id));
   listEl.appendChild(goneBtn);
 }
 // Server-authoritative room assignment using RPC (Option A)
