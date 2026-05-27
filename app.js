@@ -856,7 +856,7 @@ async function openRoomOverlayForStudent(student) {
       btn.addEventListener('click', () => chooseRoom(student.id, site, r.room_name, timeSlot));
       listEl.appendChild(btn);
     });
-
+   }
     // For Club Knights only: provide an "Activity in Building" choice
     if (site === 'Club Knights') {
       const activityBtn = document.createElement('button');
