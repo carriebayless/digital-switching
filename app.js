@@ -814,7 +814,7 @@ async function openRoomOverlayForStudent(student) {
   ]);
 
   listEl.innerHTML = ''; 
-  if (emptyEl) emptyEl.style.display = 'none'; // Hide the old standalone message
+  if (emptyEl) emptyEl.style.display = 'none';
 
   // 1. FILTER AVAILABLE ROOMS
   const available = rooms.filter(r => (counts.get(r.room_name) || 0) < (r.capacity || 0));
@@ -839,8 +839,7 @@ async function openRoomOverlayForStudent(student) {
     });
   }
 
-  // 3. UNIVERSAL BUTTONS (This code is now OUTSIDE the if/else logic)
-  // These will show up even if available.length is 0
+  // 3. UNIVERSAL BUTTONS (Always added after the rooms/message section)
   if (site === 'Club Knights') {
     const activityBtn = document.createElement('button');
     activityBtn.className = 'room-choice';
