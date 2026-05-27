@@ -817,13 +817,12 @@ async function openRoomOverlayForStudent(student) {
 
   listEl.innerHTML = ''; 
 
-  // --- THE FIX: KILL THE ERROR MESSAGE ---
+  // --- FORCE THE ERROR MESSAGE TO STAY HIDDEN ---
   if (emptyEl) {
     emptyEl.style.display = 'none';
-    emptyEl.style.setProperty('display', 'none', 'important');
   }
 
-  // 1. ADD ROOM BUTTONS
+  // 1. ADD AVAILABLE ROOM BUTTONS
   const available = rooms.filter(r => (counts.get(r.room_name) || 0) < (r.capacity || 0));
   available.forEach(r => {
     const inRoom = counts.get(r.room_name) || 0;
@@ -831,7 +830,7 @@ async function openRoomOverlayForStudent(student) {
     btn.className = 'room-choice';
     const style = resolveRoomStyle(r);
     
-    // Your Pill Styling
+    // Applying pill styling
     btn.style.cssText = `background:${style.bgColor}; color:${style.textColor || '#000'}; display:block; margin:0.35rem auto; width:100%; padding:2rem 1rem; font-size:1.1rem; border:none; border-radius:9999px; box-shadow:inset 0 -1px 0 rgba(0,0,0,0.06); transition:transform .06s ease;`;
     
     btn.onpointerdown = () => (btn.style.transform = 'scale(0.98)');
@@ -842,7 +841,7 @@ async function openRoomOverlayForStudent(student) {
     listEl.appendChild(btn);
   });
 
-  // 2. ADD ACTIVITY BUTTON (If Club Knights)
+  // 2. ADD ACTIVITY BUTTON (For Club Knights)
   if (site === 'Club Knights') {
     const actBtn = document.createElement('button');
     actBtn.className = 'room-choice';
@@ -852,7 +851,7 @@ async function openRoomOverlayForStudent(student) {
     listEl.appendChild(actBtn);
   }
 
-  // 3. ALWAYS ADD THE GONE BUTTON
+  // 3. ALWAYS ADD THE GONE BUTTON AT THE BOTTOM
   const goneBtn = document.createElement('button');
   goneBtn.className = 'room-choice';
   goneBtn.style.cssText = "background:#d9d9d9; color:#000; display:block; margin:0.35rem auto; width:100%; padding:2rem 1rem; font-size:1.1rem; border:none; border-radius:9999px; font-weight:bold;";
@@ -860,7 +859,7 @@ async function openRoomOverlayForStudent(student) {
   goneBtn.onclick = () => markStudentGone(student.id);
   listEl.appendChild(goneBtn);
 
-  // 4. Show a small note ONLY if rooms were full
+  // 4. ADD A SMALL NOTE IF ROOMS ARE FULL
   if (available.length === 0) {
     const msg = document.createElement('div');
     msg.textContent = "(All other rooms are currently full)";
