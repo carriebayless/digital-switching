@@ -823,7 +823,7 @@ async function openRoomOverlayForStudent(student) {
   const available = rooms.filter(r => (counts.get(r.room_name) || 0) < (r.capacity || 0));
   listEl.innerHTML = '';
 
-
+  // --- PART 1: ROOMS LIST ---
   if (available.length === 0) {
     emptyEl.style.display = 'block';
   } else {
@@ -834,7 +834,6 @@ async function openRoomOverlayForStudent(student) {
       btn.className = 'room-choice';
 
       const style = resolveRoomStyle(r);
-      // Filled pill styling
       btn.style.backgroundColor = style.bgColor;
       btn.style.color = style.textColor || '#000';
       btn.style.display = 'block';
@@ -856,62 +855,62 @@ async function openRoomOverlayForStudent(student) {
       btn.addEventListener('click', () => chooseRoom(student.id, site, r.room_name, timeSlot));
       listEl.appendChild(btn);
     });
-   }
-    // For Club Knights only: provide an "Activity in Building" choice
-    if (site === 'Club Knights') {
-      const activityBtn = document.createElement('button');
-      activityBtn.className = 'room-choice';
-      const activityStyle = resolveRoomStyle({ room_name: 'Activity in Building', color_hex: '#d9d9d9', icon_emoji: '🏛️' });
-      activityBtn.style.backgroundColor = activityStyle.bgColor;
-      activityBtn.style.color = activityStyle.textColor || '#000';
-      activityBtn.style.display = 'block';
-      activityBtn.style.margin = '0.35rem auto';
-      activityBtn.style.boxSizing = 'border-box';
-      activityBtn.style.width = '100%';
-      activityBtn.style.padding = '2rem 1rem';
-      activityBtn.style.fontSize = '1.1rem';
-      activityBtn.style.border = 'none';
-      activityBtn.style.borderRadius = '9999px';
-      activityBtn.style.boxShadow = 'inset 0 -1px 0 rgba(0,0,0,0.06)';
-      activityBtn.style.transition = 'transform .06s ease';
+  }
 
-      activityBtn.onpointerdown = () => (activityBtn.style.transform = 'scale(0.98)');
-      activityBtn.onpointerup   = () => (activityBtn.style.transform = 'scale(1)');
-      activityBtn.onpointerleave= () => (activityBtn.style.transform = 'scale(1)');
+  // --- PART 2: PERMANENT OPTIONS (Now outside the 'else' block) ---
 
-      activityBtn.textContent = `${activityStyle.icon ? activityStyle.icon + ' ' : ''}Activity in Building`;
-      activityBtn.addEventListener('click', () => markStudentActivityInBuilding(student.id));
-      listEl.appendChild(activityBtn);
-    }
+  // Activity in Building (Club Knights only)
+  if (site === 'Club Knights') {
+    const activityBtn = document.createElement('button');
+    activityBtn.className = 'room-choice';
+    const activityStyle = resolveRoomStyle({ room_name: 'Activity in Building', color_hex: '#d9d9d9', icon_emoji: '🏛️' });
+    activityBtn.style.backgroundColor = activityStyle.bgColor;
+    activityBtn.style.color = activityStyle.textColor || '#000';
+    activityBtn.style.display = 'block';
+    activityBtn.style.margin = '0.35rem auto';
+    activityBtn.style.boxSizing = 'border-box';
+    activityBtn.style.width = '100%';
+    activityBtn.style.padding = '2rem 1rem';
+    activityBtn.style.fontSize = '1.1rem';
+    activityBtn.style.border = 'none';
+    activityBtn.style.borderRadius = '9999px';
+    activityBtn.style.boxShadow = 'inset 0 -1px 0 rgba(0,0,0,0.06)';
+    activityBtn.style.transition = 'transform .06s ease';
 
-    // Always provide an inline "Gone" choice styled like a room
-    const goneBtn = document.createElement('button');
-    goneBtn.className = 'room-choice';
-    // style using the same resolver with a synthetic room object
-    const goneStyle = resolveRoomStyle({ room_name: 'Gone', color_hex: '#d9d9d9', icon_emoji: '🚪' });
-    // Filled pill styling for Gone
-    goneBtn.style.backgroundColor = goneStyle.bgColor;
-    goneBtn.style.color = goneStyle.textColor || '#000';
-    goneBtn.style.display = 'block';
-    goneBtn.style.margin = '0.35rem auto';
-    goneBtn.style.boxSizing = 'border-box';
-    goneBtn.style.width = '100%';
-    goneBtn.style.padding = '2rem 1rem';
-    goneBtn.style.fontSize = '1.1rem';
-    goneBtn.style.border = 'none';
-    goneBtn.style.borderRadius = '9999px';
-    goneBtn.style.boxShadow = 'inset 0 -1px 0 rgba(0,0,0,0.06)';
-    goneBtn.style.transition = 'transform .06s ease';
+    activityBtn.onpointerdown = () => (activityBtn.style.transform = 'scale(0.98)');
+    activityBtn.onpointerup   = () => (activityBtn.style.transform = 'scale(1)');
+    activityBtn.onpointerleave= () => (activityBtn.style.transform = 'scale(1)');
 
-    goneBtn.onpointerdown = () => (goneBtn.style.transform = 'scale(0.98)');
-    goneBtn.onpointerup   = () => (goneBtn.style.transform = 'scale(1)');
-    goneBtn.onpointerleave= () => (goneBtn.style.transform = 'scale(1)');
+    activityBtn.textContent = `${activityStyle.icon ? activityStyle.icon + ' ' : ''}Activity in Building`;
+    activityBtn.addEventListener('click', () => markStudentActivityInBuilding(student.id));
+    listEl.appendChild(activityBtn);
+  }
 
-    goneBtn.textContent = `${goneStyle.icon ? goneStyle.icon + ' ' : ''}Gone`;
-    goneBtn.addEventListener('click', () => markStudentGone(student.id));
-    listEl.appendChild(goneBtn);
-  
+  // Always show "Gone" choice
+  const goneBtn = document.createElement('button');
+  goneBtn.className = 'room-choice';
+  const goneStyle = resolveRoomStyle({ room_name: 'Gone', color_hex: '#d9d9d9', icon_emoji: '🚪' });
+  goneBtn.style.backgroundColor = goneStyle.bgColor;
+  goneBtn.style.color = goneStyle.textColor || '#000';
+  goneBtn.style.display = 'block';
+  goneBtn.style.margin = '0.35rem auto';
+  goneBtn.style.boxSizing = 'border-box';
+  goneBtn.style.width = '100%';
+  goneBtn.style.padding = '2rem 1rem';
+  goneBtn.style.fontSize = '1.1rem';
+  goneBtn.style.border = 'none';
+  goneBtn.style.borderRadius = '9999px';
+  goneBtn.style.boxShadow = 'inset 0 -1px 0 rgba(0,0,0,0.06)';
+  goneBtn.style.transition = 'transform .06s ease';
 
+  goneBtn.onpointerdown = () => (goneBtn.style.transform = 'scale(0.98)');
+  goneBtn.onpointerup   = () => (goneBtn.style.transform = 'scale(1)');
+  goneBtn.onpointerleave= () => (goneBtn.style.transform = 'scale(1)');
+
+  goneBtn.textContent = `${goneStyle.icon ? goneStyle.icon + ' ' : ''}Gone`;
+  goneBtn.addEventListener('click', () => markStudentGone(student.id));
+  listEl.appendChild(goneBtn);
+}
 
 // Server-authoritative room assignment using RPC (Option A)
 async function chooseRoom(studentId, site, roomName, timeSlot) {
