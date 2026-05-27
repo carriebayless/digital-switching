@@ -794,24 +794,17 @@ async function loadStudents() {
 // New student-name click: open device-aware room chooser overlay
 async function openRoomOverlayForStudent(student) {
   const site = resolveSiteForRoomsFromDevice();
-  if (!site) { showMessage('This device is not assigned to a student list yet.', false); return; }
+  if (!site) { showMessage('This device is not assigned to a site.', false); return; }
   const timeSlot = ['Kids Play','Club Knights','Non-School Day'].includes(site) ? currentTimeSlotLabel() : null;
 
-  // Remember for RPC
   window.selectedStudentId = student.id;
   window.selectedStudentName = `${student.firstname} ${student.lastname}`;
 
-  // Wire close
-  const closeBtn = document.getElementById('room-overlay-close');
-  if (closeBtn) closeBtn.onclick = () => {
-    document.getElementById('room-overlay').classList.remove('show');
-  };
-
-  // Build list
   const listEl = document.getElementById('room-overlay-list');
   const emptyEl = document.getElementById('room-overlay-empty');
   const overlayEl = document.getElementById('room-overlay');
   const titleEl = document.getElementById('room-overlay-title');
+  
   if (titleEl) titleEl.textContent = `Hi, ${student.firstname}! Where would you like to go?`;
 
   listEl.innerHTML = 'Loading…';
@@ -822,53 +815,44 @@ async function openRoomOverlayForStudent(student) {
     fetchRoomCounts(site)
   ]);
 
-const available = rooms.filter(r => (counts.get(r.room_name) || 0) < (r.capacity || 0));
-  listEl.innerHTML = '';
+  listEl.innerHTML = ''; 
 
-  // 1. Force the "No rooms" message to stay hidden so it doesn't block our buttons
-  if (emptyEl) emptyEl.style.display = 'none';
+  // --- THE FIX: KILL THE ERROR MESSAGE ---
+  if (emptyEl) {
+    emptyEl.style.display = 'none';
+    emptyEl.style.setProperty('display', 'none', 'important');
+  }
 
-  // 2. Add the available rooms (if any)
+  // 1. ADD ROOM BUTTONS
+  const available = rooms.filter(r => (counts.get(r.room_name) || 0) < (r.capacity || 0));
   available.forEach(r => {
     const inRoom = counts.get(r.room_name) || 0;
     const btn = document.createElement('button');
     btn.className = 'room-choice';
     const style = resolveRoomStyle(r);
-
-    // Apply your specific pill styling
-    btn.style.backgroundColor = style.bgColor;
-    btn.style.color = style.textColor || '#000';
-    btn.style.display = 'block';
-    btn.style.margin = '0.35rem auto';
-    btn.style.width = '100%';
-    btn.style.padding = '2rem 1rem';
-    btn.style.fontSize = '1.1rem';
-    btn.style.border = 'none';
-    btn.style.borderRadius = '9999px';
-    btn.style.boxShadow = 'inset 0 -1px 0 rgba(0,0,0,0.06)';
-    btn.style.transition = 'transform .06s ease';
-
+    
+    // Your Pill Styling
+    btn.style.cssText = `background:${style.bgColor}; color:${style.textColor || '#000'}; display:block; margin:0.35rem auto; width:100%; padding:2rem 1rem; font-size:1.1rem; border:none; border-radius:9999px; box-shadow:inset 0 -1px 0 rgba(0,0,0,0.06); transition:transform .06s ease;`;
+    
     btn.onpointerdown = () => (btn.style.transform = 'scale(0.98)');
     btn.onpointerup = () => (btn.style.transform = 'scale(1)');
-    btn.onpointerleave = () => (btn.style.transform = 'scale(1)');
-
+    
     btn.textContent = `${style.icon ? style.icon + ' ' : ''}${r.room_name} — ${inRoom}/${r.capacity}`;
     btn.addEventListener('click', () => chooseRoom(student.id, site, r.room_name, timeSlot));
     listEl.appendChild(btn);
   });
 
-  // 3. Add "Activity in Building" if site is Club Knights
+  // 2. ADD ACTIVITY BUTTON (If Club Knights)
   if (site === 'Club Knights') {
-    const activityBtn = document.createElement('button');
-    activityBtn.className = 'room-choice';
-    // Grey styling for utility buttons
-    activityBtn.style.cssText = "background:#d9d9d9; color:#000; display:block; margin:0.35rem auto; width:100%; padding:2rem 1rem; font-size:1.1rem; border:none; border-radius:9999px; font-weight:bold;";
-    activityBtn.textContent = "🏛️ Activity in Building";
-    activityBtn.onclick = () => markStudentActivityInBuilding(student.id);
-    listEl.appendChild(activityBtn);
+    const actBtn = document.createElement('button');
+    actBtn.className = 'room-choice';
+    actBtn.style.cssText = "background:#d9d9d9; color:#000; display:block; margin:0.35rem auto; width:100%; padding:2rem 1rem; font-size:1.1rem; border:none; border-radius:9999px; font-weight:bold;";
+    actBtn.textContent = "🏛️ Activity in Building";
+    actBtn.onclick = () => markStudentActivityInBuilding(student.id);
+    listEl.appendChild(actBtn);
   }
 
-  // 4. ALWAYS add the "Gone" button at the bottom
+  // 3. ALWAYS ADD THE GONE BUTTON
   const goneBtn = document.createElement('button');
   goneBtn.className = 'room-choice';
   goneBtn.style.cssText = "background:#d9d9d9; color:#000; display:block; margin:0.35rem auto; width:100%; padding:2rem 1rem; font-size:1.1rem; border:none; border-radius:9999px; font-weight:bold;";
@@ -876,13 +860,14 @@ const available = rooms.filter(r => (counts.get(r.room_name) || 0) < (r.capacity
   goneBtn.onclick = () => markStudentGone(student.id);
   listEl.appendChild(goneBtn);
 
-  // 5. If NO rooms were available, show a small text note below the buttons
+  // 4. Show a small note ONLY if rooms were full
   if (available.length === 0) {
     const msg = document.createElement('div');
     msg.textContent = "(All other rooms are currently full)";
     msg.style.cssText = "padding:10px; color:#666; font-style:italic; text-align:center; font-size:0.9rem;";
     listEl.appendChild(msg);
   }
+}
 
     // For Club Knights only: provide an "Activity in Building" choice
     if (site === 'Club Knights') {
