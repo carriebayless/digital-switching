@@ -840,6 +840,7 @@ async function openRoomOverlayForStudent(student) {
   }
 
   // 3. UNIVERSAL BUTTONS (Always added after the rooms/message section)
+  // This must be outside the if/else logic to show when rooms are full
   if (site === 'Club Knights') {
     const activityBtn = document.createElement('button');
     activityBtn.className = 'room-choice';
