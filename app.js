@@ -856,7 +856,7 @@ async function openRoomOverlayForStudent(student) {
     msg.style.cssText = "padding:10px; color:#888; font-style:italic; text-align:center;";
     listEl.appendChild(msg);
   }
-}
+} // <--- THIS CLOSES THE FUNCTION PROPERLY
 
 // Server-authoritative room assignment using RPC (Option A)
 async function chooseRoom(studentId, site, roomName, timeSlot) {
