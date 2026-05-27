@@ -822,42 +822,67 @@ async function openRoomOverlayForStudent(student) {
     fetchRoomCounts(site)
   ]);
 
-  const available = rooms.filter(r => (counts.get(r.room_name) || 0) < (r.capacity || 0));
+const available = rooms.filter(r => (counts.get(r.room_name) || 0) < (r.capacity || 0));
   listEl.innerHTML = '';
 
+  // 1. Force the "No rooms" message to stay hidden so it doesn't block our buttons
+  if (emptyEl) emptyEl.style.display = 'none';
 
+  // 2. Add the available rooms (if any)
+  available.forEach(r => {
+    const inRoom = counts.get(r.room_name) || 0;
+    const btn = document.createElement('button');
+    btn.className = 'room-choice';
+    const style = resolveRoomStyle(r);
+
+    // Apply your specific pill styling
+    btn.style.backgroundColor = style.bgColor;
+    btn.style.color = style.textColor || '#000';
+    btn.style.display = 'block';
+    btn.style.margin = '0.35rem auto';
+    btn.style.width = '100%';
+    btn.style.padding = '2rem 1rem';
+    btn.style.fontSize = '1.1rem';
+    btn.style.border = 'none';
+    btn.style.borderRadius = '9999px';
+    btn.style.boxShadow = 'inset 0 -1px 0 rgba(0,0,0,0.06)';
+    btn.style.transition = 'transform .06s ease';
+
+    btn.onpointerdown = () => (btn.style.transform = 'scale(0.98)');
+    btn.onpointerup = () => (btn.style.transform = 'scale(1)');
+    btn.onpointerleave = () => (btn.style.transform = 'scale(1)');
+
+    btn.textContent = `${style.icon ? style.icon + ' ' : ''}${r.room_name} — ${inRoom}/${r.capacity}`;
+    btn.addEventListener('click', () => chooseRoom(student.id, site, r.room_name, timeSlot));
+    listEl.appendChild(btn);
+  });
+
+  // 3. Add "Activity in Building" if site is Club Knights
+  if (site === 'Club Knights') {
+    const activityBtn = document.createElement('button');
+    activityBtn.className = 'room-choice';
+    // Grey styling for utility buttons
+    activityBtn.style.cssText = "background:#d9d9d9; color:#000; display:block; margin:0.35rem auto; width:100%; padding:2rem 1rem; font-size:1.1rem; border:none; border-radius:9999px; font-weight:bold;";
+    activityBtn.textContent = "🏛️ Activity in Building";
+    activityBtn.onclick = () => markStudentActivityInBuilding(student.id);
+    listEl.appendChild(activityBtn);
+  }
+
+  // 4. ALWAYS add the "Gone" button at the bottom
+  const goneBtn = document.createElement('button');
+  goneBtn.className = 'room-choice';
+  goneBtn.style.cssText = "background:#d9d9d9; color:#000; display:block; margin:0.35rem auto; width:100%; padding:2rem 1rem; font-size:1.1rem; border:none; border-radius:9999px; font-weight:bold;";
+  goneBtn.textContent = "🚪 Gone / Checked Out";
+  goneBtn.onclick = () => markStudentGone(student.id);
+  listEl.appendChild(goneBtn);
+
+  // 5. If NO rooms were available, show a small text note below the buttons
   if (available.length === 0) {
-    emptyEl.style.display = 'block';
-  } else {
-    emptyEl.style.display = 'none';
-    available.forEach(r => {
-      const inRoom = counts.get(r.room_name) || 0;
-      const btn = document.createElement('button');
-      btn.className = 'room-choice';
-
-      const style = resolveRoomStyle(r);
-      // Filled pill styling
-      btn.style.backgroundColor = style.bgColor;
-      btn.style.color = style.textColor || '#000';
-      btn.style.display = 'block';
-      btn.style.margin = '0.35rem auto';
-      btn.style.boxSizing = 'border-box';
-      btn.style.width = '100%';
-      btn.style.padding = '2rem 1rem';
-      btn.style.fontSize = '1.1rem';
-      btn.style.border = 'none';
-      btn.style.borderRadius = '9999px';
-      btn.style.boxShadow = 'inset 0 -1px 0 rgba(0,0,0,0.06)';
-      btn.style.transition = 'transform .06s ease';
-
-      btn.onpointerdown = () => (btn.style.transform = 'scale(0.98)');
-      btn.onpointerup   = () => (btn.style.transform = 'scale(1)');
-      btn.onpointerleave= () => (btn.style.transform = 'scale(1)');
-
-      btn.textContent = `${style.icon ? style.icon + ' ' : ''}${r.room_name} — ${inRoom}/${r.capacity}`;
-      btn.addEventListener('click', () => chooseRoom(student.id, site, r.room_name, timeSlot));
-      listEl.appendChild(btn);
-    });
+    const msg = document.createElement('div');
+    msg.textContent = "(All other rooms are currently full)";
+    msg.style.cssText = "padding:10px; color:#666; font-style:italic; text-align:center; font-size:0.9rem;";
+    listEl.appendChild(msg);
+  }
 
     // For Club Knights only: provide an "Activity in Building" choice
     if (site === 'Club Knights') {
