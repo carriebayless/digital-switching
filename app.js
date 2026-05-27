@@ -798,89 +798,66 @@ async function openRoomOverlayForStudent(student) {
   window.selectedStudentId = student.id;
   window.selectedStudentName = `${student.firstname} ${student.lastname}`;
 
-  const closeBtn = document.getElementById('room-overlay-close');
-  if (closeBtn) closeBtn.onclick = () => {
-    document.getElementById('room-overlay').classList.remove('show');
-  };
-
   const listEl = document.getElementById('room-overlay-list');
   const emptyEl = document.getElementById('room-overlay-empty');
   const overlayEl = document.getElementById('room-overlay');
   const titleEl = document.getElementById('room-overlay-title');
+  
   if (titleEl) titleEl.textContent = `Hi, ${student.firstname}! Where would you like to go?`;
 
   listEl.innerHTML = 'Loading…';
-  overlayEl.classList.add('show');
+  overlayEl.classList.add('show'); // This uses the .show class from your CSS
 
   const [rooms, counts] = await Promise.all([
     fetchEligibleRooms(site, timeSlot),
     fetchRoomCounts(site)
   ]);
 
-  // 1. Clear the list and ALWAYS hide the old empty message div
-  listEl.innerHTML = '';
-  emptyEl.style.display = 'none';
+  // --- THE FIX STARTS HERE ---
+  listEl.innerHTML = ''; // Clear "Loading..."
+  emptyEl.style.display = 'none'; // Always hide the standalone empty message
 
-  // 2. Filter available rooms
   const available = rooms.filter(r => (counts.get(r.room_name) || 0) < (r.capacity || 0));
 
-  // 3. Create the "Gone" Button FIRST (so it's always at the top/accessible)
-  const goneBtn = document.createElement('button');
-  goneBtn.className = 'room-choice';
-  const goneStyle = resolveRoomStyle({ room_name: 'Gone', color_hex: '#d9d9d9', icon_emoji: '🚪' });
-  
-  // Re-applying your specific button styles to ensure consistency
-  Object.assign(goneBtn.style, {
-    backgroundColor: goneStyle.bgColor,
-    color: goneStyle.textColor || '#000',
-    display: 'block',
-    margin: '0.35rem auto',
-    width: '100%',
-    padding: '2rem 1rem',
-    fontSize: '1.1rem',
-    border: 'none',
-    borderRadius: '9999px',
-    marginBottom: '20px' // Add some space below "Gone"
-  });
-
-  goneBtn.textContent = `${goneStyle.icon ? goneStyle.icon + ' ' : ''}Gone`;
-  goneBtn.addEventListener('click', () => markStudentGone(student.id));
-  listEl.appendChild(goneBtn);
-
-  // 4. If rooms are full, add a text notice to the list instead of toggling a div
+  // 1. If no rooms are available, put the message INSIDE the list so it doesn't break layout
   if (available.length === 0) {
-    const fullMsg = document.createElement('div');
-    fullMsg.textContent = "⚠️ All rooms are currently at capacity.";
-    fullMsg.style.textAlign = 'center';
-    fullMsg.style.color = '#666';
-    fullMsg.style.padding = '10px';
-    fullMsg.style.fontStyle = 'italic';
-    listEl.appendChild(fullMsg);
+    const msg = document.createElement('div');
+    msg.textContent = "All rooms are currently full.";
+    msg.style.padding = "20px";
+    msg.style.color = "#666";
+    msg.style.fontStyle = "italic";
+    listEl.appendChild(msg);
   } else {
-    // 5. If rooms ARE available, list them
+    // 2. Add available room buttons
     available.forEach(r => {
       const inRoom = counts.get(r.room_name) || 0;
       const btn = document.createElement('button');
-      btn.className = 'room-choice';
+      btn.className = 'room-choice'; // Uses your CSS for layout
       const style = resolveRoomStyle(r);
-      
-      Object.assign(btn.style, {
-        backgroundColor: style.bgColor,
-        color: style.textColor || '#000',
-        display: 'block',
-        margin: '0.35rem auto',
-        width: '100%',
-        padding: '2rem 1rem',
-        fontSize: '1.1rem',
-        border: 'none',
-        borderRadius: '9999px'
-      });
-
+      btn.style.backgroundColor = style.bgColor;
+      btn.style.color = style.textColor || '#000';
       btn.textContent = `${style.icon ? style.icon + ' ' : ''}${r.room_name} — ${inRoom}/${r.capacity}`;
       btn.addEventListener('click', () => chooseRoom(student.id, site, r.room_name, timeSlot));
       listEl.appendChild(btn);
     });
   }
+
+  // 3. UNIVERSAL BUTTONS (Always show these!)
+  if (site === 'Club Knights') {
+    const activityBtn = document.createElement('button');
+    activityBtn.className = 'room-choice';
+    activityBtn.style.backgroundColor = "#d9d9d9";
+    activityBtn.textContent = "🏛️ Activity in Building";
+    activityBtn.onclick = () => markStudentActivityInBuilding(student.id);
+    listEl.appendChild(activityBtn);
+  }
+
+  const goneBtn = document.createElement('button');
+  goneBtn.className = 'room-choice';
+  goneBtn.style.backgroundColor = "#d9d9d9";
+  goneBtn.textContent = "🚪 Gone";
+  goneBtn.onclick = () => markStudentGone(student.id);
+  listEl.appendChild(goneBtn);
 }
 
   // --- LOGIC GATE 2: UNIVERSAL BUTTONS (This is the fix!) ---
