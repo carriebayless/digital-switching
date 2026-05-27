@@ -817,36 +817,71 @@ async function openRoomOverlayForStudent(student) {
     fetchRoomCounts(site)
   ]);
 
-  const available = rooms.filter(r => (counts.get(r.room_name) || 0) < (r.capacity || 0));
+  // 1. Clear the list and ALWAYS hide the old empty message div
   listEl.innerHTML = '';
+  emptyEl.style.display = 'none';
 
-  // --- LOGIC GATE 1: ROOMS ONLY ---
+  // 2. Filter available rooms
+  const available = rooms.filter(r => (counts.get(r.room_name) || 0) < (r.capacity || 0));
+
+  // 3. Create the "Gone" Button FIRST (so it's always at the top/accessible)
+  const goneBtn = document.createElement('button');
+  goneBtn.className = 'room-choice';
+  const goneStyle = resolveRoomStyle({ room_name: 'Gone', color_hex: '#d9d9d9', icon_emoji: '🚪' });
+  
+  // Re-applying your specific button styles to ensure consistency
+  Object.assign(goneBtn.style, {
+    backgroundColor: goneStyle.bgColor,
+    color: goneStyle.textColor || '#000',
+    display: 'block',
+    margin: '0.35rem auto',
+    width: '100%',
+    padding: '2rem 1rem',
+    fontSize: '1.1rem',
+    border: 'none',
+    borderRadius: '9999px',
+    marginBottom: '20px' // Add some space below "Gone"
+  });
+
+  goneBtn.textContent = `${goneStyle.icon ? goneStyle.icon + ' ' : ''}Gone`;
+  goneBtn.addEventListener('click', () => markStudentGone(student.id));
+  listEl.appendChild(goneBtn);
+
+  // 4. If rooms are full, add a text notice to the list instead of toggling a div
   if (available.length === 0) {
-    emptyEl.style.display = 'block';
+    const fullMsg = document.createElement('div');
+    fullMsg.textContent = "⚠️ All rooms are currently at capacity.";
+    fullMsg.style.textAlign = 'center';
+    fullMsg.style.color = '#666';
+    fullMsg.style.padding = '10px';
+    fullMsg.style.fontStyle = 'italic';
+    listEl.appendChild(fullMsg);
   } else {
-    emptyEl.style.display = 'none';
+    // 5. If rooms ARE available, list them
     available.forEach(r => {
       const inRoom = counts.get(r.room_name) || 0;
       const btn = document.createElement('button');
       btn.className = 'room-choice';
       const style = resolveRoomStyle(r);
-      btn.style.backgroundColor = style.bgColor;
-      btn.style.color = style.textColor || '#000';
       
-      // Standard styling for your buttons
-      btn.style.display = 'block';
-      btn.style.margin = '0.35rem auto';
-      btn.style.width = '100%';
-      btn.style.padding = '2rem 1rem';
-      btn.style.fontSize = '1.1rem';
-      btn.style.border = 'none';
-      btn.style.borderRadius = '9999px';
+      Object.assign(btn.style, {
+        backgroundColor: style.bgColor,
+        color: style.textColor || '#000',
+        display: 'block',
+        margin: '0.35rem auto',
+        width: '100%',
+        padding: '2rem 1rem',
+        fontSize: '1.1rem',
+        border: 'none',
+        borderRadius: '9999px'
+      });
 
       btn.textContent = `${style.icon ? style.icon + ' ' : ''}${r.room_name} — ${inRoom}/${r.capacity}`;
       btn.addEventListener('click', () => chooseRoom(student.id, site, r.room_name, timeSlot));
       listEl.appendChild(btn);
     });
   }
+}
 
   // --- LOGIC GATE 2: UNIVERSAL BUTTONS (This is the fix!) ---
   // We closed the "else" block above. 
