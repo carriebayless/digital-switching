@@ -795,17 +795,14 @@ async function openRoomOverlayForStudent(student) {
   if (!site) { showMessage('This device is not assigned to a student list yet.', false); return; }
   const timeSlot = ['Kids Play','Club Knights','Non-School Day'].includes(site) ? currentTimeSlotLabel() : null;
 
-  // Remember for RPC
   window.selectedStudentId = student.id;
   window.selectedStudentName = `${student.firstname} ${student.lastname}`;
 
-  // Wire close
   const closeBtn = document.getElementById('room-overlay-close');
   if (closeBtn) closeBtn.onclick = () => {
     document.getElementById('room-overlay').classList.remove('show');
   };
 
-  // Build list
   const listEl = document.getElementById('room-overlay-list');
   const emptyEl = document.getElementById('room-overlay-empty');
   const overlayEl = document.getElementById('room-overlay');
@@ -823,7 +820,7 @@ async function openRoomOverlayForStudent(student) {
   const available = rooms.filter(r => (counts.get(r.room_name) || 0) < (r.capacity || 0));
   listEl.innerHTML = '';
 
-  // --- PART 1: ROOMS LIST ---
+  // --- LOGIC GATE 1: ROOMS ONLY ---
   if (available.length === 0) {
     emptyEl.style.display = 'block';
   } else {
@@ -832,24 +829,18 @@ async function openRoomOverlayForStudent(student) {
       const inRoom = counts.get(r.room_name) || 0;
       const btn = document.createElement('button');
       btn.className = 'room-choice';
-
       const style = resolveRoomStyle(r);
       btn.style.backgroundColor = style.bgColor;
       btn.style.color = style.textColor || '#000';
+      
+      // Standard styling for your buttons
       btn.style.display = 'block';
       btn.style.margin = '0.35rem auto';
-      btn.style.boxSizing = 'border-box';
       btn.style.width = '100%';
       btn.style.padding = '2rem 1rem';
       btn.style.fontSize = '1.1rem';
       btn.style.border = 'none';
       btn.style.borderRadius = '9999px';
-      btn.style.boxShadow = 'inset 0 -1px 0 rgba(0,0,0,0.06)';
-      btn.style.transition = 'transform .06s ease';
-
-      btn.onpointerdown = () => (btn.style.transform = 'scale(0.98)');
-      btn.onpointerup   = () => (btn.style.transform = 'scale(1)');
-      btn.onpointerleave= () => (btn.style.transform = 'scale(1)');
 
       btn.textContent = `${style.icon ? style.icon + ' ' : ''}${r.room_name} — ${inRoom}/${r.capacity}`;
       btn.addEventListener('click', () => chooseRoom(student.id, site, r.room_name, timeSlot));
@@ -857,9 +848,10 @@ async function openRoomOverlayForStudent(student) {
     });
   }
 
-  // --- PART 2: PERMANENT OPTIONS (Now outside the 'else' block) ---
+  // --- LOGIC GATE 2: UNIVERSAL BUTTONS (This is the fix!) ---
+  // We closed the "else" block above. 
+  // Everything below this line will appear even if available.length is 0.
 
-  // Activity in Building (Club Knights only)
   if (site === 'Club Knights') {
     const activityBtn = document.createElement('button');
     activityBtn.className = 'room-choice';
@@ -868,25 +860,17 @@ async function openRoomOverlayForStudent(student) {
     activityBtn.style.color = activityStyle.textColor || '#000';
     activityBtn.style.display = 'block';
     activityBtn.style.margin = '0.35rem auto';
-    activityBtn.style.boxSizing = 'border-box';
     activityBtn.style.width = '100%';
     activityBtn.style.padding = '2rem 1rem';
     activityBtn.style.fontSize = '1.1rem';
     activityBtn.style.border = 'none';
     activityBtn.style.borderRadius = '9999px';
-    activityBtn.style.boxShadow = 'inset 0 -1px 0 rgba(0,0,0,0.06)';
-    activityBtn.style.transition = 'transform .06s ease';
-
-    activityBtn.onpointerdown = () => (activityBtn.style.transform = 'scale(0.98)');
-    activityBtn.onpointerup   = () => (activityBtn.style.transform = 'scale(1)');
-    activityBtn.onpointerleave= () => (activityBtn.style.transform = 'scale(1)');
 
     activityBtn.textContent = `${activityStyle.icon ? activityStyle.icon + ' ' : ''}Activity in Building`;
     activityBtn.addEventListener('click', () => markStudentActivityInBuilding(student.id));
     listEl.appendChild(activityBtn);
   }
 
-  // Always show "Gone" choice
   const goneBtn = document.createElement('button');
   goneBtn.className = 'room-choice';
   const goneStyle = resolveRoomStyle({ room_name: 'Gone', color_hex: '#d9d9d9', icon_emoji: '🚪' });
@@ -894,24 +878,16 @@ async function openRoomOverlayForStudent(student) {
   goneBtn.style.color = goneStyle.textColor || '#000';
   goneBtn.style.display = 'block';
   goneBtn.style.margin = '0.35rem auto';
-  goneBtn.style.boxSizing = 'border-box';
   goneBtn.style.width = '100%';
   goneBtn.style.padding = '2rem 1rem';
   goneBtn.style.fontSize = '1.1rem';
   goneBtn.style.border = 'none';
   goneBtn.style.borderRadius = '9999px';
-  goneBtn.style.boxShadow = 'inset 0 -1px 0 rgba(0,0,0,0.06)';
-  goneBtn.style.transition = 'transform .06s ease';
-
-  goneBtn.onpointerdown = () => (goneBtn.style.transform = 'scale(0.98)');
-  goneBtn.onpointerup   = () => (goneBtn.style.transform = 'scale(1)');
-  goneBtn.onpointerleave= () => (goneBtn.style.transform = 'scale(1)');
 
   goneBtn.textContent = `${goneStyle.icon ? goneStyle.icon + ' ' : ''}Gone`;
   goneBtn.addEventListener('click', () => markStudentGone(student.id));
   listEl.appendChild(goneBtn);
 }
-
 // Server-authoritative room assignment using RPC (Option A)
 async function chooseRoom(studentId, site, roomName, timeSlot) {
   // 0) Prevent double taps across all room-choice buttons in the overlay
