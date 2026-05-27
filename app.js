@@ -792,77 +792,68 @@ async function loadStudents() {
 // New student-name click: open device-aware room chooser overlay
 async function openRoomOverlayForStudent(student) {
   const site = resolveSiteForRoomsFromDevice();
-  if (!site) { showMessage('This device is not assigned to a student list yet.', false); return; }
   const timeSlot = ['Kids Play','Club Knights','Non-School Day'].includes(site) ? currentTimeSlotLabel() : null;
 
   window.selectedStudentId = student.id;
   window.selectedStudentName = `${student.firstname} ${student.lastname}`;
 
   const listEl = document.getElementById('room-overlay-list');
-  const emptyEl = document.getElementById('room-overlay-empty'); // The old "No rooms" message
+  const emptyEl = document.getElementById('room-overlay-empty');
   const overlayEl = document.getElementById('room-overlay');
   const titleEl = document.getElementById('room-overlay-title');
   
   if (titleEl) titleEl.textContent = `Hi, ${student.firstname}! Where would you like to go?`;
 
-  // Setup UI
   listEl.innerHTML = 'Loading…';
   overlayEl.classList.add('show');
-  
-  // FORCE HIDE the old "No rooms available" div if it exists in your HTML
-  if (emptyEl) {
-    emptyEl.style.display = 'none';
-    emptyEl.classList.remove('show');
-  }
-  // FORCE SHOW the list where the Gone button lives
-  listEl.style.display = 'block';
 
   const [rooms, counts] = await Promise.all([
     fetchEligibleRooms(site, timeSlot),
     fetchRoomCounts(site)
   ]);
 
-  listEl.innerHTML = ''; // Clear loading text
+  // --- CLEANUP ---
+  listEl.innerHTML = ''; 
+  // This line kills the "No rooms available" message forever:
+  if (emptyEl) emptyEl.style.cssText = "display:none !important;"; 
 
-  // --- 1. ALWAYS ADD THE "GONE" BUTTON FIRST ---
-  // This makes it the top priority so it shows up before anything else
+  // --- 1. ALWAYS ADD THE GONE BUTTON AT THE TOP ---
   const goneBtn = document.createElement('button');
   goneBtn.className = 'room-choice';
-  goneBtn.style.cssText = "background:#d9d9d9; color:#000; font-weight:bold; margin-bottom:15px;";
+  goneBtn.style.cssText = "background:#d9d9d9; color:#000; font-weight:bold; width:100%; padding:20px; border-radius:10px; border:none; margin-bottom:15px; display:block;";
   goneBtn.textContent = "🚪 Gone / Checked Out";
   goneBtn.onclick = () => markStudentGone(student.id);
   listEl.appendChild(goneBtn);
 
-  // --- 2. ADD ACTIVITY BUTTON (For Club Knights) ---
+  // --- 2. ADD ACTIVITY BUTTON (If Club Knights) ---
   if (site === 'Club Knights') {
-    const activityBtn = document.createElement('button');
-    activityBtn.className = 'room-choice';
-    activityBtn.style.cssText = "background:#d9d9d9; color:#000; font-weight:bold; margin-bottom:15px;";
-    activityBtn.textContent = "🏛️ Activity in Building";
-    activityBtn.onclick = () => markStudentActivityInBuilding(student.id);
-    listEl.appendChild(activityBtn);
+    const actBtn = document.createElement('button');
+    actBtn.className = 'room-choice';
+    actBtn.style.cssText = "background:#d9d9d9; color:#000; font-weight:bold; width:100%; padding:20px; border-radius:10px; border:none; margin-bottom:15px; display:block;";
+    actBtn.textContent = "🏛️ Activity in Building";
+    actBtn.onclick = () => markStudentActivityInBuilding(student.id);
+    listEl.appendChild(actBtn);
   }
 
-  // --- 3. ADD AVAILABLE ROOMS ---
+  // --- 3. ADD ROOMS (Only if they have space) ---
   const available = rooms.filter(r => (counts.get(r.room_name) || 0) < (r.capacity || 0));
-
+  
   if (available.length > 0) {
     available.forEach(r => {
       const inRoom = counts.get(r.room_name) || 0;
       const btn = document.createElement('button');
       btn.className = 'room-choice';
       const style = resolveRoomStyle(r);
-      btn.style.backgroundColor = style.bgColor;
-      btn.style.color = style.textColor || '#000';
+      btn.style.cssText = `background:${style.bgColor}; color:${style.textColor || '#000'}; width:100%; padding:20px; border-radius:10px; border:none; margin-bottom:10px; font-weight:bold; display:block;`;
       btn.textContent = `${style.icon ? style.icon + ' ' : ''}${r.room_name} — ${inRoom}/${r.capacity}`;
       btn.addEventListener('click', () => chooseRoom(student.id, site, r.room_name, timeSlot));
       listEl.appendChild(btn);
     });
   } else {
-    // Just a small note if rooms are full, but NOT a full-screen replacement
+    // If no rooms, just add a small line of text at the bottom
     const msg = document.createElement('div');
-    msg.textContent = "(All other rooms are currently full)";
-    msg.style.cssText = "padding: 10px; color: #888; font-style: italic; font-size: 0.9rem;";
+    msg.textContent = "(Note: All other rooms are at capacity)";
+    msg.style.cssText = "padding:10px; color:#888; font-style:italic; text-align:center;";
     listEl.appendChild(msg);
   }
 }
