@@ -859,6 +859,7 @@ async function openRoomOverlayForStudent(student) {
   goneBtn.onclick = () => markStudentGone(student.id);
   listEl.appendChild(goneBtn);
 }
+
 // Server-authoritative room assignment using RPC (Option A)
 async function chooseRoom(studentId, site, roomName, timeSlot) {
   // 0) Prevent double taps across all room-choice buttons in the overlay
