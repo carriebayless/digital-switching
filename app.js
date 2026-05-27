@@ -822,36 +822,37 @@ async function openRoomOverlayForStudent(student) {
     emptyEl.style.display = 'none';
   }
 
-  // 1. ADD AVAILABLE ROOM BUTTONS
   const available = rooms.filter(r => (counts.get(r.room_name) || 0) < (r.capacity || 0));
+  listEl.innerHTML = '';
+
+  // 1. Force hide the "No rooms" message so it doesn't block our buttons
+  if (emptyEl) emptyEl.style.display = 'none';
+
+  // 2. Add any available rooms
   available.forEach(r => {
     const inRoom = counts.get(r.room_name) || 0;
     const btn = document.createElement('button');
     btn.className = 'room-choice';
     const style = resolveRoomStyle(r);
     
-    // Applying pill styling
     btn.style.cssText = `background:${style.bgColor}; color:${style.textColor || '#000'}; display:block; margin:0.35rem auto; width:100%; padding:2rem 1rem; font-size:1.1rem; border:none; border-radius:9999px; box-shadow:inset 0 -1px 0 rgba(0,0,0,0.06); transition:transform .06s ease;`;
-    
-    btn.onpointerdown = () => (btn.style.transform = 'scale(0.98)');
-    btn.onpointerup = () => (btn.style.transform = 'scale(1)');
     
     btn.textContent = `${style.icon ? style.icon + ' ' : ''}${r.room_name} — ${inRoom}/${r.capacity}`;
     btn.addEventListener('click', () => chooseRoom(student.id, site, r.room_name, timeSlot));
     listEl.appendChild(btn);
   });
 
-  // 2. ADD ACTIVITY BUTTON (For Club Knights)
+  // 3. Add "Activity" button if applicable
   if (site === 'Club Knights') {
-    const actBtn = document.createElement('button');
-    actBtn.className = 'room-choice';
-    actBtn.style.cssText = "background:#d9d9d9; color:#000; display:block; margin:0.35rem auto; width:100%; padding:2rem 1rem; font-size:1.1rem; border:none; border-radius:9999px; font-weight:bold;";
-    actBtn.textContent = "🏛️ Activity in Building";
-    actBtn.onclick = () => markStudentActivityInBuilding(student.id);
-    listEl.appendChild(actBtn);
+    const activityBtn = document.createElement('button');
+    activityBtn.className = 'room-choice';
+    activityBtn.style.cssText = "background:#d9d9d9; color:#000; display:block; margin:0.35rem auto; width:100%; padding:2rem 1rem; font-size:1.1rem; border:none; border-radius:9999px; font-weight:bold;";
+    activityBtn.textContent = "🏛️ Activity in Building";
+    activityBtn.onclick = () => markStudentActivityInBuilding(student.id);
+    listEl.appendChild(activityBtn);
   }
 
-  // 3. ALWAYS ADD THE GONE BUTTON AT THE BOTTOM
+  // 4. ALWAYS add the "Gone" button at the bottom
   const goneBtn = document.createElement('button');
   goneBtn.className = 'room-choice';
   goneBtn.style.cssText = "background:#d9d9d9; color:#000; display:block; margin:0.35rem auto; width:100%; padding:2rem 1rem; font-size:1.1rem; border:none; border-radius:9999px; font-weight:bold;";
@@ -859,7 +860,7 @@ async function openRoomOverlayForStudent(student) {
   goneBtn.onclick = () => markStudentGone(student.id);
   listEl.appendChild(goneBtn);
 
-  // 4. ADD A SMALL NOTE IF ROOMS ARE FULL
+  // 5. If no rooms were available, show a small text note below the buttons
   if (available.length === 0) {
     const msg = document.createElement('div');
     msg.textContent = "(All other rooms are currently full)";
