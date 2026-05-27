@@ -799,33 +799,54 @@ async function openRoomOverlayForStudent(student) {
   window.selectedStudentName = `${student.firstname} ${student.lastname}`;
 
   const listEl = document.getElementById('room-overlay-list');
-  const emptyEl = document.getElementById('room-overlay-empty');
+  const emptyEl = document.getElementById('room-overlay-empty'); // The old "No rooms" message
   const overlayEl = document.getElementById('room-overlay');
   const titleEl = document.getElementById('room-overlay-title');
   
   if (titleEl) titleEl.textContent = `Hi, ${student.firstname}! Where would you like to go?`;
 
+  // Setup UI
   listEl.innerHTML = 'Loading…';
   overlayEl.classList.add('show');
+  
+  // FORCE HIDE the old "No rooms available" div if it exists in your HTML
+  if (emptyEl) {
+    emptyEl.style.display = 'none';
+    emptyEl.classList.remove('show');
+  }
+  // FORCE SHOW the list where the Gone button lives
+  listEl.style.display = 'block';
 
   const [rooms, counts] = await Promise.all([
     fetchEligibleRooms(site, timeSlot),
     fetchRoomCounts(site)
   ]);
 
-  listEl.innerHTML = ''; 
-  if (emptyEl) emptyEl.style.display = 'none';
+  listEl.innerHTML = ''; // Clear loading text
 
-  // 1. FILTER AVAILABLE ROOMS
+  // --- 1. ALWAYS ADD THE "GONE" BUTTON FIRST ---
+  // This makes it the top priority so it shows up before anything else
+  const goneBtn = document.createElement('button');
+  goneBtn.className = 'room-choice';
+  goneBtn.style.cssText = "background:#d9d9d9; color:#000; font-weight:bold; margin-bottom:15px;";
+  goneBtn.textContent = "🚪 Gone / Checked Out";
+  goneBtn.onclick = () => markStudentGone(student.id);
+  listEl.appendChild(goneBtn);
+
+  // --- 2. ADD ACTIVITY BUTTON (For Club Knights) ---
+  if (site === 'Club Knights') {
+    const activityBtn = document.createElement('button');
+    activityBtn.className = 'room-choice';
+    activityBtn.style.cssText = "background:#d9d9d9; color:#000; font-weight:bold; margin-bottom:15px;";
+    activityBtn.textContent = "🏛️ Activity in Building";
+    activityBtn.onclick = () => markStudentActivityInBuilding(student.id);
+    listEl.appendChild(activityBtn);
+  }
+
+  // --- 3. ADD AVAILABLE ROOMS ---
   const available = rooms.filter(r => (counts.get(r.room_name) || 0) < (r.capacity || 0));
 
-  // 2. SHOW ROOMS (OR FULL MESSAGE)
-  if (available.length === 0) {
-    const msg = document.createElement('div');
-    msg.textContent = "All rooms are currently full.";
-    msg.style.cssText = "padding: 20px; color: #666; font-style: italic; text-align: center;";
-    listEl.appendChild(msg);
-  } else {
+  if (available.length > 0) {
     available.forEach(r => {
       const inRoom = counts.get(r.room_name) || 0;
       const btn = document.createElement('button');
@@ -837,27 +858,13 @@ async function openRoomOverlayForStudent(student) {
       btn.addEventListener('click', () => chooseRoom(student.id, site, r.room_name, timeSlot));
       listEl.appendChild(btn);
     });
+  } else {
+    // Just a small note if rooms are full, but NOT a full-screen replacement
+    const msg = document.createElement('div');
+    msg.textContent = "(All other rooms are currently full)";
+    msg.style.cssText = "padding: 10px; color: #888; font-style: italic; font-size: 0.9rem;";
+    listEl.appendChild(msg);
   }
-
-  // 3. UNIVERSAL BUTTONS (Always added after the rooms/message section)
-  // This must be outside the if/else logic to show when rooms are full
-  if (site === 'Club Knights') {
-    const activityBtn = document.createElement('button');
-    activityBtn.className = 'room-choice';
-    activityBtn.style.backgroundColor = "#d9d9d9";
-    activityBtn.style.color = "#000";
-    activityBtn.textContent = "🏛️ Activity in Building";
-    activityBtn.onclick = () => markStudentActivityInBuilding(student.id);
-    listEl.appendChild(activityBtn);
-  }
-
-  const goneBtn = document.createElement('button');
-  goneBtn.className = 'room-choice';
-  goneBtn.style.backgroundColor = "#d9d9d9";
-  goneBtn.style.color = "#000";
-  goneBtn.textContent = "🚪 Gone";
-  goneBtn.onclick = () => markStudentGone(student.id);
-  listEl.appendChild(goneBtn);
 }
 
 // Server-authoritative room assignment using RPC (Option A)
