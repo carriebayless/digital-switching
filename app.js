@@ -801,48 +801,41 @@ async function openRoomOverlayForStudent(student) {
   window.selectedStudentId = student.id;
   window.selectedStudentName = `${student.firstname} ${student.lastname}`;
 
-  // Wire close
+  // Wire close button
   const closeBtn = document.getElementById('room-overlay-close');
-  if (closeBtn) closeBtn.onclick = () => {
-    document.getElementById('room-overlay').classList.remove('show');
-  };
+  if (closeBtn) {
+    closeBtn.onclick = () => {
+      document.getElementById('room-overlay').classList.remove('show');
+    };
+  }
 
-  // Build list
+  // Identify UI Elements
   const listEl = document.getElementById('room-overlay-list');
   const emptyEl = document.getElementById('room-overlay-empty');
   const overlayEl = document.getElementById('room-overlay');
   const titleEl = document.getElementById('room-overlay-title');
+
   if (titleEl) titleEl.textContent = `Hi, ${student.firstname}! Where would you like to go?`;
 
+  // Start with loading and make sure "Empty" message is hidden
   listEl.innerHTML = 'Loading…';
+  if (emptyEl) emptyEl.style.display = 'none';
   overlayEl.classList.add('show');
 
+  // Fetch rooms and current counts
   const [rooms, counts] = await Promise.all([
     fetchEligibleRooms(site, timeSlot),
     fetchRoomCounts(site)
   ]);
 
+  // Filter to only show rooms that have space
   const available = rooms.filter(r => (counts.get(r.room_name) || 0) < (r.capacity || 0));
+  
+  // Clear the "Loading..." text
   listEl.innerHTML = '';
 
-
-  function openRoomOverlayForStudent(student, site, available, counts, timeSlot) {
-  const overlay = document.getElementById('roomOverlay');
-  const titleEl = document.getElementById('roomOverlayTitle');
-  const listEl  = document.getElementById('roomOverlayList');
-  const emptyEl = document.getElementById('roomOverlayEmpty');
-
-  // Set the title
-  titleEl.textContent = `Where is ${student.first_name} going?`;
-  
-  // CRITICAL: Hide the "No rooms" message immediately so it doesn't stay stuck on screen
-  emptyEl.style.display = 'none';
-  
-  // Clear the existing list of buttons
-  listEl.innerHTML = '';
-
-  // 1. Add Room Buttons (Only if there are rooms with space)
-  if (available && available.length > 0) {
+  // 1. ADD AVAILABLE ROOMS (if any)
+  if (available.length > 0) {
     available.forEach(r => {
       const inRoom = counts.get(r.room_name) || 0;
       const btn = document.createElement('button');
@@ -862,14 +855,14 @@ async function openRoomOverlayForStudent(student) {
 
       btn.onpointerdown = () => (btn.style.transform = 'scale(0.98)');
       btn.onpointerup   = () => (btn.style.transform = 'scale(1)');
-      
+
       btn.textContent = `${style.icon ? style.icon + ' ' : ''}${r.room_name} — ${inRoom}/${r.capacity}`;
       btn.addEventListener('click', () => chooseRoom(student.id, site, r.room_name, timeSlot));
       listEl.appendChild(btn);
     });
   }
 
-  // 2. Add "Activity in Building" (For Club Knights site only)
+  // 2. ALWAYS ADD "ACTIVITY IN BUILDING" (For Club Knights)
   if (site === 'Club Knights') {
     const activityBtn = document.createElement('button');
     activityBtn.className = 'room-choice';
@@ -890,7 +883,7 @@ async function openRoomOverlayForStudent(student) {
     listEl.appendChild(activityBtn);
   }
 
-  // 3. Add "Gone" Button (ALWAYS DISPLAYED)
+  // 3. ALWAYS ADD THE "GONE" BUTTON
   const goneBtn = document.createElement('button');
   goneBtn.className = 'room-choice';
   const gStyle = resolveRoomStyle({ room_name: 'Gone', color_hex: '#d9d9d9', icon_emoji: '🚪' });
@@ -909,8 +902,9 @@ async function openRoomOverlayForStudent(student) {
   goneBtn.addEventListener('click', () => markStudentGone(student.id));
   listEl.appendChild(goneBtn);
 
-  // Show the overlay
-  overlay.style.display = 'flex';
+  // Final Safety Check: If for some reason nothing was added, THEN show empty message
+  if (listEl.innerHTML === '' && emptyEl) {
+    emptyEl.style.display = 'block';
   }
 }
 
