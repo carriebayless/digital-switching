@@ -890,7 +890,6 @@ function renderEligibleRooms(rooms, counts, student, site, timeSlot) {
   goneBtn.addEventListener('click', () => markStudentGone(student.id));
   listEl.appendChild(goneBtn);
 }
-}
 
 // Server-authoritative room assignment using RPC (Option A)
 async function chooseRoom(studentId, site, roomName, timeSlot) {
