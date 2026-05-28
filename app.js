@@ -794,116 +794,104 @@ async function loadStudents() {
 // New student-name click: open device-aware room chooser overlay
 async function openRoomOverlayForStudent(student) {
   const site = resolveSiteForRoomsFromDevice();
-  if (!site) { showMessage('This device is not assigned to a student list yet.', false); return; }
+  if (!site) { 
+    showMessage('This device is not assigned to a student list yet.', false); 
+    return; 
+  }
+  
   const timeSlot = ['Kids Play','Club Knights','Non-School Day'].includes(site) ? currentTimeSlotLabel() : null;
 
-  // Remember for RPC
+  // Track selection for the database update later
   window.selectedStudentId = student.id;
   window.selectedStudentName = `${student.firstname} ${student.lastname}`;
 
-  // Wire close button
-  const closeBtn = document.getElementById('room-overlay-close');
-  if (closeBtn) {
-    closeBtn.onclick = () => {
-      document.getElementById('room-overlay').classList.remove('show');
-    };
-  }
-
-  // Identify UI Elements
-  const listEl = document.getElementById('room-overlay-list');
-  const emptyEl = document.getElementById('room-overlay-empty');
+  // Get the UI elements
   const overlayEl = document.getElementById('room-overlay');
-  const titleEl = document.getElementById('room-overlay-title');
+  const listEl    = document.getElementById('room-overlay-list');
+  const emptyEl   = document.getElementById('room-overlay-empty');
+  const titleEl   = document.getElementById('room-overlay-title');
 
+  // 1. SETUP UI IMMEDIATELY
   if (titleEl) titleEl.textContent = `Hi, ${student.firstname}! Where would you like to go?`;
-
-  // Start with loading and make sure "Empty" message is hidden
-  listEl.innerHTML = 'Loading…';
+  listEl.innerHTML = '<p style="text-align:center; padding:20px;">Loading choices...</p>';
+  
+  // FORCE the "No rooms available" message to hide right now
   if (emptyEl) emptyEl.style.display = 'none';
+  
+  // Show the window
   overlayEl.classList.add('show');
 
-  // Fetch rooms and current counts
+  // 2. GET DATA
   const [rooms, counts] = await Promise.all([
     fetchEligibleRooms(site, timeSlot),
     fetchRoomCounts(site)
   ]);
 
-  // Filter to only show rooms that have space
+  // Filter rooms that aren't full
   const available = rooms.filter(r => (counts.get(r.room_name) || 0) < (r.capacity || 0));
-  
-  // Clear the "Loading..." text
+
+  // 3. BUILD BUTTONS (Start with a fresh list)
   listEl.innerHTML = '';
 
-  // 1. ADD AVAILABLE ROOMS (if any)
+  // --- A. ROOM BUTTONS ---
   if (available.length > 0) {
     available.forEach(r => {
       const inRoom = counts.get(r.room_name) || 0;
       const btn = document.createElement('button');
-      btn.className = 'room-choice';
+      btn.className = 'room-choice-btn'; // Use your CSS class
       const style = resolveRoomStyle(r);
 
+      // Apply styles manually to ensure they look like the others
       btn.style.backgroundColor = style.bgColor;
       btn.style.color = style.textColor || '#000';
-      btn.style.display = 'block';
-      btn.style.margin = '0.35rem auto';
       btn.style.width = '100%';
-      btn.style.padding = '2rem 1rem';
-      btn.style.fontSize = '1.1rem';
+      btn.style.marginBottom = '12px';
+      btn.style.padding = '20px';
+      btn.style.borderRadius = '12px';
+      btn.style.fontSize = '1.2rem';
       btn.style.border = 'none';
-      btn.style.borderRadius = '9999px';
-      btn.style.transition = 'transform .06s ease';
+      btn.style.fontWeight = '600';
 
-      btn.onpointerdown = () => (btn.style.transform = 'scale(0.98)');
-      btn.onpointerup   = () => (btn.style.transform = 'scale(1)');
-
-      btn.textContent = `${style.icon ? style.icon + ' ' : ''}${r.room_name} — ${inRoom}/${r.capacity}`;
-      btn.addEventListener('click', () => chooseRoom(student.id, site, r.room_name, timeSlot));
+      btn.textContent = `${style.icon ? style.icon + ' ' : ''}${r.room_name} (${inRoom}/${r.capacity})`;
+      btn.onclick = () => chooseRoom(student.id, site, r.room_name, timeSlot);
       listEl.appendChild(btn);
     });
   }
 
-  // 2. ALWAYS ADD "ACTIVITY IN BUILDING" (For Club Knights)
+  // --- B. ACTIVITY BUTTON (Club Knights Only) ---
   if (site === 'Club Knights') {
-    const activityBtn = document.createElement('button');
-    activityBtn.className = 'room-choice';
-    const aStyle = resolveRoomStyle({ room_name: 'Activity', color_hex: '#d9d9d9', icon_emoji: '🏛️' });
+    const actBtn = document.createElement('button');
+    actBtn.style.backgroundColor = '#e2e8f0';
+    actBtn.style.width = '100%';
+    actBtn.style.marginBottom = '12px';
+    actBtn.style.padding = '20px';
+    actBtn.style.borderRadius = '12px';
+    actBtn.style.border = '1px solid #cbd5e1';
+    actBtn.style.fontSize = '1.2rem';
     
-    activityBtn.style.backgroundColor = aStyle.bgColor;
-    activityBtn.style.color = '#000';
-    activityBtn.style.display = 'block';
-    activityBtn.style.margin = '0.35rem auto';
-    activityBtn.style.width = '100%';
-    activityBtn.style.padding = '2rem 1rem';
-    activityBtn.style.fontSize = '1.1rem';
-    activityBtn.style.border = 'none';
-    activityBtn.style.borderRadius = '9999px';
-
-    activityBtn.textContent = '🏛️ Activity in Building';
-    activityBtn.addEventListener('click', () => markStudentActivityInBuilding(student.id));
-    listEl.appendChild(activityBtn);
+    actBtn.textContent = '🏛️ Activity in Building';
+    actBtn.onclick = () => markStudentActivityInBuilding(student.id);
+    listEl.appendChild(actBtn);
   }
 
-  // 3. ALWAYS ADD THE "GONE" BUTTON
+  // --- C. GONE BUTTON (Always shown at the bottom) ---
   const goneBtn = document.createElement('button');
-  goneBtn.className = 'room-choice';
-  const gStyle = resolveRoomStyle({ room_name: 'Gone', color_hex: '#d9d9d9', icon_emoji: '🚪' });
-
-  goneBtn.style.backgroundColor = gStyle.bgColor;
-  goneBtn.style.color = '#000';
-  goneBtn.style.display = 'block';
-  goneBtn.style.margin = '0.35rem auto';
+  goneBtn.style.backgroundColor = '#f1f5f9';
   goneBtn.style.width = '100%';
-  goneBtn.style.padding = '2rem 1rem';
-  goneBtn.style.fontSize = '1.1rem';
-  goneBtn.style.border = 'none';
-  goneBtn.style.borderRadius = '9999px';
+  goneBtn.style.padding = '20px';
+  goneBtn.style.borderRadius = '12px';
+  goneBtn.style.border = '2px solid #cbd5e1';
+  goneBtn.style.fontSize = '1.2rem';
+  goneBtn.style.fontWeight = 'bold';
+  goneBtn.style.marginTop = '10px';
 
-  goneBtn.textContent = '🚪 Gone';
-  goneBtn.addEventListener('click', () => markStudentGone(student.id));
+  goneBtn.textContent = '🚪 GONE / CHECK OUT';
+  goneBtn.onclick = () => markStudentGone(student.id);
   listEl.appendChild(goneBtn);
 
-  // Final Safety Check: If for some reason nothing was added, THEN show empty message
-  if (listEl.innerHTML === '' && emptyEl) {
+  // --- D. FINAL CHECK ---
+  // If we somehow still have an empty list, and ONLY then, show the empty message
+  if (listEl.children.length === 0 && emptyEl) {
     emptyEl.style.display = 'block';
   }
 }
