@@ -817,7 +817,7 @@ async function openRoomOverlayForStudent(student) {
   listEl.innerHTML = 'Loading…';
   overlayEl.classList.add('show');
 
-  // ALWAYS hide the "empty" message immediately so it can't "flicker" on
+  // Hide the "empty" message immediately
   if (emptyEl) emptyEl.style.display = 'none';
 
   const [rooms, counts] = await Promise.all([
@@ -825,12 +825,22 @@ async function openRoomOverlayForStudent(student) {
     fetchRoomCounts(site)
   ]);
 
-  const available = rooms.filter(r => (counts.get(r.room_name) || 0) < (r.capacity || 0));
-  
-  // Clear "Loading..."
+  // Pass the data to the render function
+  renderEligibleRooms(rooms, counts, student, site, timeSlot);
+}
+
+function renderEligibleRooms(rooms, counts, student, site, timeSlot) {
+  const listEl = document.getElementById('room-overlay-list');
+  const emptyEl = document.getElementById('room-overlay-empty');
   listEl.innerHTML = '';
 
-  // 1. Add available rooms (if any exist)
+  // 1. Filter rooms that have space
+  const available = rooms.filter(r => (counts.get(r.room_name) || 0) < (r.capacity || 0));
+
+  // 2. FORCE HIDE the "No available rooms" message 
+  if (emptyEl) emptyEl.style.display = 'none';
+
+  // 3. Add Available Rooms (if any)
   available.forEach(r => {
     const inRoom = counts.get(r.room_name) || 0;
     const btn = document.createElement('button');
@@ -841,65 +851,41 @@ async function openRoomOverlayForStudent(student) {
     btn.style.color = style.textColor || '#000';
     btn.style.display = 'block';
     btn.style.margin = '0.35rem auto';
-    btn.style.boxSizing = 'border-box';
     btn.style.width = '100%';
     btn.style.padding = '2rem 1rem';
     btn.style.fontSize = '1.1rem';
-    btn.style.border = 'none';
     btn.style.borderRadius = '9999px';
-    btn.style.boxShadow = 'inset 0 -1px 0 rgba(0,0,0,0.06)';
-    btn.style.transition = 'transform .06s ease';
-
-    btn.onpointerdown = () => (btn.style.transform = 'scale(0.98)');
-    btn.onpointerup   = () => (btn.style.transform = 'scale(1)');
-    btn.onpointerleave= () => (btn.style.transform = 'scale(1)');
+    btn.style.border = 'none';
 
     btn.textContent = `${style.icon ? style.icon + ' ' : ''}${r.room_name} — ${inRoom}/${r.capacity}`;
     btn.addEventListener('click', () => chooseRoom(student.id, site, r.room_name, timeSlot));
     listEl.appendChild(btn);
   });
 
-  // 2. Add "Activity in Building" (For Club Knights site)
+  // 4. ALWAYS add "Activity in Building" (For Club Knights)
   if (site === 'Club Knights') {
     const activityBtn = document.createElement('button');
     activityBtn.className = 'room-choice';
-    const activityStyle = resolveRoomStyle({ room_name: 'Activity in Building', color_hex: '#d9d9d9', icon_emoji: '🏛️' });
-    activityBtn.style.backgroundColor = activityStyle.bgColor;
-    activityBtn.style.color = activityStyle.textColor || '#000';
-    activityBtn.style.display = 'block';
-    activityBtn.style.margin = '0.35rem auto';
-    activityBtn.style.boxSizing = 'border-box';
+    activityBtn.style.backgroundColor = '#d9d9d9';
     activityBtn.style.width = '100%';
     activityBtn.style.padding = '2rem 1rem';
-    activityBtn.style.fontSize = '1.1rem';
-    activityBtn.style.border = 'none';
     activityBtn.style.borderRadius = '9999px';
-    activityBtn.style.boxShadow = 'inset 0 -1px 0 rgba(0,0,0,0.06)';
-    activityBtn.style.transition = 'transform .06s ease';
-
+    activityBtn.style.margin = '0.35rem auto';
+    activityBtn.style.border = 'none';
     activityBtn.textContent = '🏛️ Activity in Building';
     activityBtn.addEventListener('click', () => markStudentActivityInBuilding(student.id));
     listEl.appendChild(activityBtn);
   }
 
-  // 3. ALWAYS add the "Gone" button (This is the critical part)
+  // 5. ALWAYS add "Gone" button
   const goneBtn = document.createElement('button');
   goneBtn.className = 'room-choice';
-  const goneStyle = resolveRoomStyle({ room_name: 'Gone', color_hex: '#d9d9d9', icon_emoji: '🚪' });
-  
-  goneBtn.style.backgroundColor = goneStyle.bgColor;
-  goneBtn.style.color = goneStyle.textColor || '#000';
-  goneBtn.style.display = 'block';
-  goneBtn.style.margin = '0.35rem auto';
-  goneBtn.style.boxSizing = 'border-box';
+  goneBtn.style.backgroundColor = '#d9d9d9';
   goneBtn.style.width = '100%';
   goneBtn.style.padding = '2rem 1rem';
-  goneBtn.style.fontSize = '1.1rem';
-  goneBtn.style.border = 'none';
   goneBtn.style.borderRadius = '9999px';
-  goneBtn.style.boxShadow = 'inset 0 -1px 0 rgba(0,0,0,0.06)';
-  goneBtn.style.transition = 'transform .06s ease';
-
+  goneBtn.style.margin = '0.35rem auto';
+  goneBtn.style.border = 'none';
   goneBtn.textContent = '🚪 Gone';
   goneBtn.addEventListener('click', () => markStudentGone(student.id));
   listEl.appendChild(goneBtn);
