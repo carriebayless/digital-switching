@@ -253,6 +253,9 @@ function applyDeviceFilterRow(row) {
   if (!row) return;
   if (!window.currentDevice) window.currentDevice = {};
 
+   const prevColumn = currentDevice.column;
+   const prevValue = currentDevice.value;
+
   if (Object.prototype.hasOwnProperty.call(row, 'device_name')) {
     currentDevice.name = row.device_name; // accept NULL/empty; do not write defaults
   }
@@ -273,6 +276,14 @@ function applyDeviceFilterRow(row) {
 
   if (typeof renderDeviceInfoPanel === 'function') renderDeviceInfoPanel();
   updateSiteTitleFromDevice();
+
+   // Reassigned to a different roster — refresh immediately instead of
+   // waiting for the (now much slower) safety-net timer to catch up.
+   const filterChanged = (currentDevice.column !== prevColumn) || (currentDevice.value !== prevValue);
+   if (filterChanged) {
+     loadStudents();
+     loadRoomStatusBar();
+   }
 }
 
 // Determine site used by rooms for this device's filter
@@ -359,7 +370,7 @@ async function fetchRoomCounts(site) {
   //  - School-year sites:     filter by master_roster.site
   //  - Summer sites:          filter by master_roster.summer_site
   //  - Non-school day lists:  filter by master_roster.non_school_day = true
-  let q = supabase.from('master_roster').select('assigned_room, is_gone');
+  let q = supabase.from('master_roster').select('id, assigned_room, is_gone');
   const mode = (currentDevice?.column || '').toString();
 
   if (mode === 'site') {
@@ -370,10 +381,6 @@ async function fetchRoomCounts(site) {
     q = q.eq('non_school_day', true);
   }
 
-  // Count only students who are not gone (is_gone = false) or where the column is still NULL
-  // PostgREST `or` syntax: field.is.null OR field.eq.false
-  q = q.or('is_gone.is.null,is_gone.eq.false');
-
   const { data, error } = await q;
   if (error) {
     console.error('count load error', error);
@@ -381,9 +388,11 @@ async function fetchRoomCounts(site) {
   }
 
   const map = new Map();
+  studentRoomState.clear();
   (data || []).forEach((s) => {
-    if (!s.assigned_room) return;
-    map.set(s.assigned_room, (map.get(s.assigned_room) || 0) + 1);
+    const effectiveRoom = (!s.is_gone && s.assigned_room) ? s.assigned_room : null;
+    studentRoomState.set(s.id, effectiveRoom);
+    if (effectiveRoom) map.set(effectiveRoom, (map.get(effectiveRoom) || 0) + 1);
   });
   return map;
 }
@@ -533,85 +542,130 @@ function resolveRoomStyle(room) {
   return { bgColor, textColor, icon };
 }
 
+// Cached room list (capacity/color/active) — rarely changes, so it's only
+// refetched when the "rooms" table itself changes, not on every room pick.
+let roomsListCache = [];
+let roomsListCacheKey = null;
+// Our own memory of each student's current room, keyed by student id.
+// We stopped trusting payload.old for this — Supabase only sends the full
+// "old" row if the table has REPLICA IDENTITY FULL set, which this table
+// doesn't, so payload.old was silently missing the data we needed.
+let studentRoomState = new Map();
+
+// Live counts, held in memory and adjusted in place as changes come in —
+// instead of re-fetching every student's row for this site each time.
+let roomCounts = new Map();
+
 // Function to load and display the static room status bar
 async function loadRoomStatusBar() {
-  clearTimeout(statusBarUpdateTimeout);
-  statusBarUpdateTimeout = setTimeout(async () => {
-    const statusBar = document.getElementById("room-status-bar");
-    if (!statusBar) return;
+   const site = resolveSiteForRoomsFromDevice();
+   const statusBar = document.getElementById("room-status-bar");
+   if (!site) { if (statusBar) statusBar.innerHTML = 'No device list set.'; return; }
+   const timeSlot = ['Kids Play','Club Knights','Non-School Day'].includes(site) ? currentTimeSlotLabel() : null;
 
-    const previous = Array.from(statusBar.querySelectorAll('.room-status'))
-    .reduce((acc, el) => { acc[el.textContent.split(':')[0].trim()] = el.textContent; return acc; }, {});
+   const [rooms, counts] = await Promise.all([
+     fetchEligibleRooms(site, timeSlot),
+     fetchRoomCounts(site)
+   ]);
 
-    // Create a temporary DocumentFragment to build the new content
-    const newStatusBarContent = document.createDocumentFragment();
+   roomsListCache = rooms;
+   roomsListCacheKey = `${site}||${timeSlot || 'null'}`;
+   roomCounts = counts;
 
-    const title = document.createElement('h3');
-    title.textContent = "CURRENT ROOM STATUS:";
-    title.style.marginBottom = '10px';
-    title.style.textAlign = 'center';
-    title.style.color = '#333';
-    title.style.width = '100%';
-    newStatusBarContent.appendChild(title); // Append to temp container
+   renderRoomStatusBar();
+ }
 
-    const site = resolveSiteForRoomsFromDevice();
-    if (!site) { statusBar.innerHTML = 'No device list set.'; return; }
-    const timeSlot = ['Kids Play','Club Knights','Non-School Day'].includes(site) ? currentTimeSlotLabel() : null;
+ // Paints the status bar from whatever is already cached in memory — no
+ // database request. Used after in-memory count updates so per-change
+ // accuracy doesn't require asking the database again.
+ function renderRoomStatusBar() {
+   clearTimeout(statusBarUpdateTimeout);
+   statusBarUpdateTimeout = setTimeout(() => {
+     const statusBar = document.getElementById("room-status-bar");
+     if (!statusBar) return;
 
-    const [rooms, counts] = await Promise.all([
-      fetchEligibleRooms(site, timeSlot),
-      fetchRoomCounts(site)
-    ]);
-    console.log('[rooms styles]', rooms.map(r => ({ name: r.room_name, color_hex: r.color_hex, icon_emoji: r.icon_emoji, time_slot: r.time_slot })));
+     const previous = Array.from(statusBar.querySelectorAll('.room-status'))
+       .reduce((acc, el) => { acc[el.textContent.split(':')[0].trim()] = el.textContent; return acc; }, {});
 
-    const sortedRooms = rooms.slice().sort((a, b) => a.room_name.localeCompare(b.room_name));
+     const newStatusBarContent = document.createDocumentFragment();
 
-    for (const room of sortedRooms) {
-      const roomDiv = document.createElement('div');
-      roomDiv.className = 'room-status';
+     const title = document.createElement('h3');
+     title.textContent = "CURRENT ROOM STATUS:";
+     title.style.marginBottom = '10px';
+     title.style.textAlign = 'center';
+     title.style.color = '#333';
+     title.style.width = '100%';
+     newStatusBarContent.appendChild(title);
 
-      const { bgColor, textColor, icon } = resolveRoomStyle(room);
-      roomDiv.style.backgroundColor = bgColor;
-      roomDiv.style.color = textColor;
+     const sortedRooms = roomsListCache.slice().sort((a, b) => a.room_name.localeCompare(b.room_name));
 
-      const assignedCount = counts.get(room.room_name) || 0;
-      roomDiv.textContent = `${icon ? icon + ' ' : ''}${room.room_name}: ${assignedCount}/${room.capacity}`;
-      const prevText = previous[room.room_name];
-      if (prevText && prevText !== roomDiv.textContent) {
-        roomDiv.classList.add('pulse');
-        setTimeout(() => roomDiv.classList.remove('pulse'), 500);
-      }
-      newStatusBarContent.appendChild(roomDiv);
-    }
+     for (const room of sortedRooms) {
+         const roomDiv = document.createElement('div');
+       roomDiv.className = 'room-status';
 
-    // Replace the entire content of the actual status bar element in one go
-    statusBar.innerHTML = ''; // Clear the *actual* displayed element just once
-    statusBar.appendChild(newStatusBarContent); // Append all new content at once
-  }, STATUS_BAR_DEBOUNCE_DELAY);
-}
+       const { bgColor, textColor, icon } = resolveRoomStyle(room);
+       roomDiv.style.backgroundColor = bgColor;
+       roomDiv.style.color = textColor;
 
-// --- Assignment cache (from master_roster) and real-time subscription ---
-let assignmentsCache = [];
+       const assignedCount = roomCounts.get(room.room_name) || 0;
+       roomDiv.textContent = `${icon ? icon + ' ' : ''}${room.room_name}: ${assignedCount}/${room.capacity}`;
+       const prevText = previous[room.room_name];
+       if (prevText && prevText !== roomDiv.textContent) {
+         roomDiv.classList.add('pulse');
+         setTimeout(() => roomDiv.classList.remove('pulse'), 500);
+       }
+       newStatusBarContent.appendChild(roomDiv);
+     }
+     statusBar.innerHTML = '';
+     statusBar.appendChild(newStatusBarContent);
+   }, STATUS_BAR_DEBOUNCE_DELAY);
+ }
 
-async function fetchAssignments(siteFilterValue) {
-  // Optionally scope by site for quicker counts; if not provided, load all
-  let q = supabase.from('master_roster').select('id, assigned_room, site');
-  if (siteFilterValue) q = q.eq('site', siteFilterValue);
-  const { data, error } = await q;
-  if (!error && data) {
-    assignmentsCache = data;
+ // Applies one master_roster change directly to the in-memory counts.
+ // Returns true once handled; false only if the payload shape is unexpected
+ // (in which case the caller falls back to a real refresh, just that once).
+ function applyRoomCountDelta(payload) {
+  const isDelete = payload.eventType === 'DELETE';
+  const row = isDelete ? (payload.old || {}) : (payload.new || {});
+  const id = row.id;
+  if (id == null) return false;
+
+  const inScope = (r) => {
+    if (!r || !currentDevice?.column) return false;
+    if (currentDevice.column === 'non_school_day') return !!r.non_school_day;
+    if (currentDevice.column === 'summer_site') return r.summer_site === currentDevice.value;
+    return r.site === currentDevice.value;
+  };
+
+  // Previous room comes from OUR memory, not payload.old.
+  const prevRoom = studentRoomState.has(id) ? studentRoomState.get(id) : null;
+
+  let newRoom = null;
+  if (!isDelete && inScope(payload.new)) {
+    newRoom = (!row.is_gone && row.assigned_room) ? row.assigned_room : null;
   }
-}
 
-// Initial cache population (no site until device filter is known)
-fetchAssignments();
+  if (isDelete || !inScope(payload.new)) {
+    studentRoomState.delete(id);
+  } else {
+    studentRoomState.set(id, newRoom);
+  }
+
+  if (prevRoom === newRoom) return true;
+  if (prevRoom) roomCounts.set(prevRoom, Math.max(0, (roomCounts.get(prevRoom) || 0) - 1));
+  if (newRoom) roomCounts.set(newRoom, (roomCounts.get(newRoom) || 0) + 1);
+  return true;
+}
 
 // Realtime: listen to master_roster & rooms
 supabase
   .channel('public:student_ui')
-  .on('postgres_changes', { event: '*', schema: 'public', table: 'master_roster' }, () => {
-    // Refresh status bar; overlay (if open) will re-pull live availability elsewhere
-    loadRoomStatusBar();
+   .on('postgres_changes', { event: '*', schema: 'public', table: 'master_roster' }, (payload) => {
+     if (applyRoomCountDelta(payload)) {
+       renderRoomStatusBar(); // repaint from memory — no new database request
+     } else {
+       loadRoomStatusBar(); // unexpected shape; fall back to a full refresh just this once
+     }
   })
   .on('postgres_changes', { event: '*', schema: 'public', table: 'rooms' }, () => {
     loadRoomStatusBar();
@@ -730,9 +784,7 @@ async function loadStudents() {
           btn.style.padding = '10px 15px';
           btn.style.fontSize = '1.2rem';
           btn.style.borderRadius = '8px';
-          btn.style.border = '1px solid #ccc';
           btn.style.flex = '1 1 calc(50% - 10px)';
-          btn.style.color = '#000';
           btn.addEventListener('click', () => openRoomOverlayForStudent(student));
           grid.appendChild(btn);
         });
@@ -765,9 +817,7 @@ async function loadStudents() {
         btn.style.padding = '10px 15px';
         btn.style.fontSize = '1.2rem';
         btn.style.borderRadius = '8px';
-        btn.style.border = '1px solid #ccc';
         btn.style.flex = '1 1 calc(50% - 10px)';
-        btn.style.color = '#000';
         btn.addEventListener('click', () => openRoomOverlayForStudent(student));
         studentGrid.appendChild(btn);
       });
@@ -853,7 +903,7 @@ function renderEligibleRooms(rooms, counts, student, site, timeSlot) {
     btn.style.margin = '0.35rem auto';
     btn.style.width = '100%';
     btn.style.padding = '2rem 1rem';
-    btn.style.fontSize = '1.1rem';
+    btn.style.fontSize = '1.2rem';
     btn.style.borderRadius = '9999px';
     btn.style.border = 'none';
 
@@ -1076,9 +1126,10 @@ function renderDeviceInfoPanel() {
   await loadStudents();
   await loadRoomStatusBar();
 })();
-// Enable polling for room status updates (e.g., every 5 seconds)
-// This is a fallback because real-time replication for room tables is 'Coming Soon'
-setInterval(loadRoomStatusBar, 5000); // Polls every 5 seconds (5000 milliseconds)
+ // Safety net only: realtime + in-memory deltas handle accuracy instantly now.
+ // This slow interval just self-corrects if a device ever misses a realtime
+ // message — it is not the primary update path anymore.
+ setInterval(loadRoomStatusBar, 90000); // Every 90 seconds
 
 // Device info dialog wiring
 (function setupDeviceInfoDialog(){

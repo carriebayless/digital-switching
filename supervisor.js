@@ -25,69 +25,6 @@ async function checkAuth() {
   }
 }
 
-function showLoginModal() {
-  if (document.getElementById('magic-overlay')) return;
-
-  const overlay = document.createElement('div');
-  overlay.id = 'magic-overlay';
-  overlay.innerHTML = `
-    <div id="magic-modal" style="position:fixed;left:0;top:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.5);z-index:9999;">
-      <div style="background:white;padding:20px;border-radius:8px;max-width:420px;width:90%;box-shadow:0 6px 18px rgba(0,0,0,0.2);">
-        <h2 style="margin-top:0">Supervisor Access</h2>
-        <p>Enter the supervisor security number to continue.</p>
-        <input id="magic-input" type="password" inputmode="numeric" pattern="[0-9]*" placeholder="Security number" style="font-size:16px;padding:8px;width:100%;box-sizing:border-box;margin-bottom:10px;" />
-        <div style="display:flex;gap:8px;justify-content:flex-end;">
-          <button id="magic-cancel" style="padding:8px 12px;">Cancel</button>
-          <button id="magic-submit" style="padding:8px 12px;">Submit</button>
-        </div>
-        <div id="magic-error" style="color:red;margin-top:8px;display:none;"></div>
-      </div>
-    </div>`;
-
-  document.body.appendChild(overlay);
-
-  const input = document.getElementById('magic-input');
-  const errorEl = document.getElementById('magic-error');
-
-  function showError(msg) {
-    errorEl.textContent = msg;
-    errorEl.style.display = 'block';
-  }
-
-  document.getElementById('magic-submit').addEventListener('click', async () => {
-    const val = input.value.trim();
-    if (!val) { showError('Please enter the security number'); return; }
-
-    try {
-      const resp = await fetch('/api/login', {
-        method: 'POST',
-        credentials: 'same-origin',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ magicNumber: val })
-      });
-
-      if (resp.ok) {
-        const j = await resp.json();
-        if (j.ok) {
-          document.body.removeChild(overlay);
-          // After login, init the page
-          initAuthThenRender();
-          return;
-        }
-      }
-
-      showError('Invalid security number. Contact admin if issue persists.');
-    } catch (err) {
-      console.error('login fetch error', err);
-      showError('Network error. Try again or contact admin.');
-    }
-  });
-
-  document.getElementById('magic-cancel').addEventListener('click', () => {
-    showError('Access canceled. You cannot view this page without supervisor access.');
-  });
-}
-
 // --- Logout button ---
 function addLogoutButton(containerEl) {
   if (!containerEl) return;
@@ -1258,12 +1195,12 @@ function attachInlineStyleEditor(cell, rowEl, room, site, isTimeBasedSite, timeS
   const saveBtn = document.createElement('button');
   saveBtn.type = 'button';
   saveBtn.textContent = 'Save';
-  saveBtn.className = 'nav-button save-room-style';
+  saveBtn.className = 'chip chip-success';
 
   const cancelBtn = document.createElement('button');
   cancelBtn.type = 'button';
   cancelBtn.textContent = 'Cancel';
-  cancelBtn.className = 'nav-button cancel-room-style';
+  cancelBtn.className = 'chip chip-secondary';
 
   editor.appendChild(colorLabel);
   editor.appendChild(emojiLabel);
@@ -1497,7 +1434,6 @@ window.addEventListener("DOMContentLoaded", async () => {
     navBar.id = "nav-bar";
     document.body.insertBefore(navBar, document.body.firstChild);
   }
-  navBar.classList.add('top-nav');
 
   const sessionTabs = document.querySelectorAll(".session-tab");
   const sessionWrapper = sessionTabs[0]?.parentElement;
@@ -2224,7 +2160,7 @@ async function loadRoomsForSite(site) {
 
     const actBtn = document.createElement('button');
     actBtn.textContent = isInactive ? 'Restore' : 'Delete';
-    actBtn.className = isInactive ? 'rm-action-btn rm-restore' : 'rm-action-btn rm-delete';
+    actBtn.className = isInactive ? 'chip chip-success' : 'chip chip-danger';
 
     const protect = (room.room_name || '').toLowerCase();
     const protectedName = protect === 'gone' || protect === 'activity in building';

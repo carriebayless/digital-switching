@@ -16,74 +16,6 @@ async function checkAuth() {
   }
 }
 
-function showLoginModal() {
-  // If modal already present, do nothing
-  if (document.getElementById('magic-overlay')) return;
-
-  const overlay = document.createElement('div');
-  overlay.id = 'magic-overlay';
-  overlay.innerHTML = `
-    <div id="magic-modal" style="position:fixed;left:0;top:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.5);z-index:9999;">
-      <div style="background:white;padding:20px;border-radius:8px;max-width:420px;width:90%;box-shadow:0 6px 18px rgba(0,0,0,0.2);">
-        <h2 style="margin-top:0">Supervisor Access</h2>
-        <p>Enter the supervisor security number to continue.</p>
-        <input id="magic-input" type="password" inputmode="numeric" pattern="[0-9]*" placeholder="Security number" style="font-size:16px;padding:8px;width:100%;box-sizing:border-box;margin-bottom:10px;" />
-        <div style="display:flex;gap:8px;justify-content:flex-end;">
-          <button id="magic-cancel" style="padding:8px 12px;">Cancel</button>
-          <button id="magic-submit" style="padding:8px 12px;">Submit</button>
-        </div>
-        <div id="magic-error" style="color:red;margin-top:8px;display:none;"></div>
-      </div>
-    </div>`;
-
-  document.body.appendChild(overlay);
-
-  const input = document.getElementById('magic-input');
-  const errorEl = document.getElementById('magic-error');
-
-  function showError(msg) {
-    errorEl.textContent = msg;
-    errorEl.style.display = 'block';
-  }
-
-  document.getElementById('magic-submit').addEventListener('click', async () => {
-    const val = input.value.trim();
-    if (!val) { showError('Please enter the security number'); return; }
-
-    try {
-      const resp = await fetch('/api/login', {
-        method: 'POST',
-        credentials: 'same-origin',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ magicNumber: val })
-      });
-
-      if (resp.ok) {
-        const j = await resp.json();
-        if (j.ok) {
-          // success — remove modal and load roster
-          document.body.removeChild(overlay);
-          // call your existing renderer
-          renderRosterTable();
-          return;
-        }
-      }
-
-      // show error on failure
-      showError('Invalid security number. If you continue to have trouble, contact the admin.');
-    } catch (err) {
-      console.error('login fetch error', err);
-      showError('Network error. Try again or contact admin.');
-    }
-  });
-
-  document.getElementById('magic-cancel').addEventListener('click', () => {
-    showError('Access canceled. You cannot view this page without supervisor access.');
-  });
-}
-
-/* optional: small helper to add a "Logout" button (call this after page is authenticated) */
-
 function addLogoutButton(containerEl) {
   if (!containerEl) return;
 
@@ -276,7 +208,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <option value="no"${!student.non_school_day ? ' selected' : ''}>No</option>
       </select></td>
       <td>
-        ${isNew ? `<button class="btn-cancel-new primary-action-btn" style="background-color:#dc3545;">Cancel</button>` : `<button class="btn-delete primary-action-btn" style="background-color:#dc3545;">Delete</button>`}
+        ${isNew ? `<button class="btn-cancel-new primary-action-btn">Cancel</button>` : `<button class="btn-delete primary-action-btn">Delete</button>`}
       </td>
     </tr>`;
   }

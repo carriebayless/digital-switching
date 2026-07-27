@@ -9,14 +9,15 @@
 </head>
 <body>
   
-  <div id="nav-bar" class="top-nav" style="display:flex; align-items:center; gap:8px; padding:8px 12px; background:#f5f5f5; border-bottom:1px solid #ddd;">
-  <button onclick="window.location.href='index.html'" class="nav-button">Student Screen</button>
-  <button onclick="window.location.href='find-students.html'" class="nav-button">Find Students</button>
-  <button onclick="window.location.href='supervisor.html'" class="nav-button">Supervisor Dashboard</button>
-
-  <!-- Logout button container, aligns right -->
-  <div id="supervisor-logout-container" style="margin-left:auto;"></div>
-</div>
+ <header id="nav-bar" class="app-nav-bar">
+   <nav class="app-nav" aria-label="Primary">
+     <a href="index.html" class="app-nav__link">Student Screen</a>
+     <a href="supervisor.html" class="app-nav__link">Supervisor Dashboard</a>
+     <a href="find-students.html" class="app-nav__link">Find Students</a>
+     <a href="roster-manager.html" class="app-nav__link is-active" aria-current="page">Roster Manager</a>
+   </nav>
+   <div id="supervisor-logout-container" class="app-nav-bar__actions"></div>
+ </header>
 
 
   <div class="roster-manager-container">
@@ -53,7 +54,7 @@
     
     <div class="bulk-update-prompt">
       <span>Set</span>
-      <select id="bulk-update-field" class="filter-select">
+      <select id="bulk-update-field" class="filter-select ds-select">
         <option value="site">Site</option>
         <option value="summer_site">Summer Site</option>
         <option value="non_school_day">Non-School Day</option>

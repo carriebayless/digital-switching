@@ -9,24 +9,7 @@
 
   
 <style>
-  #room-table {
-    border-collapse: collapse;
-    width: 100%;
-  }
-  #room-table th, #room-table td {
-    border: 1px solid #ccc;
-    padding: 8px 12px;
-    text-align: left;
-  }
-  #room-table tbody tr.full-room td {
-    background-color: #f8d7da;
-  }
-  #room-table tbody tr.near-full-room td {
-    background-color: #fff3cd;
-  }
-  #room-table tbody tr.closed-room td {
-    background-color: #e0e0e0;
-  }
+
   /* Styles for the new overlay (similar to find-students.html overlay) */
   #clear-max-counts-overlay {
     display: none; /* Hidden by default, controlled by JS */
@@ -73,29 +56,17 @@
     justify-content: center;
     padding: 10px 15px;
     font-size: 1.1rem;
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     cursor: pointer;
     transition: background-color 0.2s, transform 0.2s;
-    border: 1px solid #ccc;
-    background-color: #f0f0f0;
-    color: #333;
+    border: 1px solid var(--border);
+    background-color: #f8fafc;
+    color: var(--text);
   }
 
   #clear-session-buttons button:hover {
-    background-color: #e0e0e0;
+    background-color: #eef1f5;
     transform: translateY(-2px);
-  }
-
-  #clear-max-counts-cancel {
-    border: 2px solid #b71c1c;
-    background-color: #ffe6e6;
-    color: #b71c1c;
-    font-weight: bold;
-    padding: 10px 15px;
-    border-radius: 8px;
-    cursor: pointer;
-    width: 100%;
-    box-sizing: border-box;
   }
 
   /* Small UI bits for styled room labels */
@@ -105,10 +76,6 @@
   .room-inline-editor input.room-icon-select { width:5.5rem; text-align:center; }
   body { padding: 20px; }
   .closed-room { background-color: #d3d3d3; }
-  .student-room-section { margin-top: 40px; }
-  .room-block { margin-bottom: 20px; }
-  .room-block h3 { margin-bottom: 5px; }
-  #room-table { margin-bottom: 32px; }
   #room-table tbody tr { transition: background-color 0.3s ease; }
   /* Add vertical space below the entire top controls card */
   #session-tab-container { margin-bottom: 24px; }
@@ -122,15 +89,16 @@
 
 
   
-  <!-- Supervisor navigation bar -->
-<div id="nav-bar" class="top-nav">
-  <button onclick="window.location.href='index.html'" class="nav-button">Student Screen</button>
-  <button onclick="window.location.href='find-students.html'" class="nav-button">Find Students</button>
-  <button onclick="window.location.href='roster-manager.html'" class="nav-button">Roster Manager</button>
-
-  <!-- Logout button goes here -->
-  <div id="supervisor-logout-container" style="margin-left:auto;"></div>
-</div>
+ <!-- Shared staff navigation -->
+ <header id="nav-bar" class="app-nav-bar">
+   <nav class="app-nav" aria-label="Primary">
+     <a href="index.html" class="app-nav__link">Student Screen</a>
+     <a href="supervisor.html" class="app-nav__link is-active" aria-current="page">Supervisor Dashboard</a>
+     <a href="find-students.html" class="app-nav__link">Find Students</a>
+     <a href="roster-manager.html" class="app-nav__link">Roster Manager</a>
+   </nav>
+   <div id="supervisor-logout-container" class="app-nav-bar__actions"></div>
+ </header>
 
 
   
@@ -139,7 +107,7 @@
   <div id="session-tab-container" class="card">
     <!-- Inline toolbar: put Site dropdown inside the card -->
     <div id="site-toolbar" style="display:flex; align-items:center; justify-content:flex-start; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
-      <select id="student-list-dropdown" class="filter-select" style="min-width:260px;">
+      <select id="student-list-dropdown" class="filter-select ds-select" style="min-width:260px;">
         <option value="">(Show All Students)</option>
         <!-- Site options -->
         <option value="site|Albertville Primary School">Albertville Primary School</option>
@@ -199,13 +167,12 @@
   </template>
   </div>
 
-  <div id="student-rooms" class="student-room-section"></div>
 <div id="clear-max-counts-overlay" class="overlay">
     <div class="modal">
-      <h2 style="color: #00047e; margin-bottom: 20px;">Clear Max Counts For Which Time?</h2>
+      <h2 style="color: var(--brand); margin-bottom: 20px;">Clear Max Counts For Which Time?</h2>
       <div id="clear-session-buttons" class="room-buttons">
         </div>
-      <button id="clear-max-counts-cancel" class="nav-button" style="margin-top: 20px;">Cancel</button>
+      <button id="clear-max-counts-cancel" class="btn btn-secondary" style="margin-top: 20px;">Cancel</button>
     </div>
   </div>
 
@@ -227,8 +194,8 @@
       <label style="display:flex; align-items:center; gap:6px;">
         <input id="devices-show-inactive" type="checkbox" /> Show inactive
       </label>
-      <input id="device-search" type="text" placeholder="Search devices…" style="flex:1; min-width:240px; padding:8px 10px; border:1px solid #ccc; border-radius:6px;">
-      <button id="refresh-devices" class="nav-button">Refresh</button>
+      <input id="device-search" type="text" placeholder="Search devices…" class="text-input" style="flex:1; min-width:240px;">
+      <button id="refresh-devices" class="btn btn-secondary">Refresh</button>
     </div>
 
     <table id="devices-table" style="width:100%; border-collapse:collapse;">
@@ -250,10 +217,10 @@
   <template id="device-row-template">
     <tr>
       <td style="padding:6px 8px;">
-        <input class="dev-name" type="text" placeholder="e.g., FE1 – Cafeteria" style="width:100%; padding:6px 8px; border:1px solid #ccc; border-radius:6px;">
+       <input class="dev-name text-input" type="text" placeholder="e.g., FE1 - Cafeteria" style="width:100%;">
       </td>
       <td style="padding:6px 8px;">
-        <select class="dev-filter" style="width:100%; padding:6px 8px; border:1px solid #ccc; border-radius:6px;">
+        <select class="dev-filter ds-select" style="width:100%;">
           <option value="">(Show All Students)</option>
           <!-- Site options -->
           <option value="site|Albertville Primary School">Albertville Primary School</option>
@@ -273,10 +240,10 @@
         <span class="status-pill" style="display:inline-block; padding:2px 8px; border-radius:999px; background:#eef; color:#225; font-size:.85rem;">Active</span>
       </td>
       <td style="padding:6px 8px; display:flex; gap:6px;">
-        <button class="dev-info nav-button" title="Details">Info</button>
-        <button class="dev-save nav-button" title="Save">Save</button>
-        <button class="dev-remove nav-button" title="Remove" style="background:#ffe6e6; border-color:#f5c2c7; color:#b71c1c;">Remove</button>
-        <button class="dev-restore nav-button" title="Restore" style="display:none;">Restore</button>
+         <button class="dev-info btn btn-secondary" title="Details">Info</button>
+         <button class="dev-save btn btn-success" title="Save">Save</button>
+         <button class="dev-remove btn btn-danger-subtle" title="Remove">Remove</button>
+         <button class="dev-restore btn btn-success" title="Restore" style="display:none;">Restore</button>
       </td>
     </tr>
   </template>
@@ -284,10 +251,10 @@
 
 <!-- Device Info dialog (Supervisor) -->
 <div id="device-admin-dialog" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:1500; align-items:center; justify-content:center;">
-  <div style="background:#fff; padding:16px 18px; border-radius:10px; width:min(92vw,600px); box-shadow:0 10px 30px rgba(0,0,0,.25);">
+  <div class="admin-dialog__panel">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-      <h3 style="margin:0; color:#00047e;">Device details</h3>
-      <button id="device-admin-close" class="nav-button">Close</button>
+      <h3 class="admin-dialog__title">Device details</h3>
+      <button id="device-admin-close" class="btn btn-secondary">Close</button>
     </div>
     <div style="font-size:.95rem; color:#333; display:grid; grid-template-columns:160px 1fr auto; row-gap:10px; column-gap:10px; align-items:center;">
       <div>Device name</div>
@@ -296,7 +263,7 @@
 
       <div>Device key</div>
       <div id="admin-info-device-key" style="font-family:monospace; font-size:.9rem;">—</div>
-      <button id="admin-copy-device-key" class="nav-button">Copy</button>
+      <button id="admin-copy-device-key" class="btn btn-secondary">Copy</button>
 
       <div>Assigned list</div>
       <div id="admin-info-filter" ></div>
@@ -315,17 +282,17 @@
 
 <!-- Device Remove / Delete chooser dialog -->
 <div id="device-remove-dialog" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:1500; align-items:center; justify-content:center;">
-  <div style="background:#fff; padding:16px 18px; border-radius:10px; width:min(92vw,520px); box-shadow:0 10px 30px rgba(0,0,0,.25);">
+  <div class="admin-dialog__panel admin-dialog__panel--narrow">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-      <h3 style="margin:0; color:#00047e;">Remove device</h3>
-      <button id="device-remove-cancel" class="nav-button">Cancel</button>
+      <h3 class="admin-dialog__title">Remove device</h3>
+      <button id="device-remove-cancel" class="btn btn-secondary">Cancel</button>
     </div>
 
     <div style="font-size:.95rem; color:#333; line-height:1.45;">
       <p style="margin:.25rem 0 .75rem;">What would you like to do with this device?</p>
-      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin:10px 0 4px;">
-        <button id="device-remove-hide" class="nav-button" style="background:#eef6ff; border-color:#cfe1ff; color:#0b3d91; padding:10px 12px;">Hide (can restore)</button>
-        <button id="device-remove-delete" class="nav-button" style="background:#fee2e2; border-color:#fecaca; color:#991b1b; padding:10px 12px;">Delete permanently</button>
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin:10px 0 4px;">         
+        <button id="device-remove-hide" class="btn btn-info" style="padding:10px 12px;">Hide (can restore)</button>
+        <button id="device-remove-delete" class="btn btn-danger-subtle" style="padding:10px 12px;">Delete permanently</button>
       </div>
       <div style="font-size:.88rem; color:#666; margin-top:.25rem;">Device: <span id="device-remove-label" style="font-weight:600;">—</span></div>
     </div>
@@ -365,8 +332,8 @@
         </div>
       </div>
       <div class="modal-actions">
-        <button type="button" id="cancel-add-room" class="cancel-btn">Cancel</button>
-        <button type="submit" id="confirm-add-room" class="add-btn">Add Room</button>
+        <button type="button" id="cancel-add-room" class="btn btn-secondary">Cancel</button>
+        <button type="submit" id="confirm-add-room" class="btn btn-success">Add Room</button>
       </div>
     </form>
   </div>

@@ -127,9 +127,11 @@ function startRosterRealtime() {
   const makeChannel = (cfg) => {
     const ch = supabaseClient.channel('find_students_roster_' + Math.random().toString(36).slice(2));
     return ch
-      .on('postgres_changes', cfg, () => {
-        fsDebounce(() => { fetchData(); }, 120);
-      })
+     .on('postgres_changes', cfg, (payload) => {
+       if (!applyStudentChange(payload)) {
+         fsDebounce(() => { fetchData(); }, 120); // unexpected shape; fall back just this once
+       }
+     })
       .subscribe();
   };
 
@@ -153,7 +155,9 @@ async function fetchFilteredStudents() {
   const rawFilter = fsCurrentFilter();
   const filter = fsNormalizeFilter(rawFilter);
 
-  let query = supabaseClient.from('master_roster').select('*').order('grade', { ascending: true });
+   let query = supabaseClient.from('master_roster')
+     .select('id, firstname, lastname, grade, assigned_room')
+     .order('grade', { ascending: true });
   if (filter.column && filter.value !== undefined && filter.value !== null && filter.value !== '') {
     const col = fsNormalizeColumnName(filter.column);
     if (col === 'non_school_day') {
@@ -301,6 +305,7 @@ function fsStartRoomsRealtime() {
     .on('postgres_changes', { event: '*', schema: 'public', table: 'rooms', filter: `site=eq.${site}` }, async () => {
       // Reload style cache and re-render when room color/icon changes
       await fsLoadRoomStylesForSite(site);
+      selectedStudentIds.clear(); // selections from the previous list no longer apply
       renderRooms(assignments, currentRoomOrder);
       // If the assign overlay is open, rebuild its buttons to reflect new styles
       const overlay = document.getElementById('assign-overlay');
@@ -321,6 +326,28 @@ function computeRoomOrderFrom(assignments) {
   return names;
 }
 
+ // Same classification rules fetchData already used — pulled out so the
+ // delta-update path below can reuse them exactly instead of duplicating them.
+ function isAssignedRoomValue(room) {
+   return room !== null && room !== "" && room !== "None";
+ }
+ function isUnassignedRoomValue(room) {
+   const r = (room || "").toString().trim().toLowerCase();
+   return r === "" || r === "none" || r === "-" || r === "null";
+ }
+ function sortUnassigned(list) {
+   return list.slice().sort((a, b) => {
+     const gradeA = a.grade ? a.grade.toString() : '';
+     const gradeB = b.grade ? b.grade.toString() : '';
+     const cmpGrade = gradeA.localeCompare(gradeB, undefined, { numeric: true });
+     if (cmpGrade !== 0) return cmpGrade;
+     const nameA = (a.student_name || [a.firstname, a.lastname].filter(Boolean).join(" ")).toLowerCase();
+     const nameB = (b.student_name || [b.firstname, b.lastname].filter(Boolean).join(" ")).toLowerCase();
+     return nameA.localeCompare(nameB);
+   });
+ }
+
+
 async function fetchData() {
   const mySeq = ++__fsRenderSeq;
   const students = await fetchFilteredStudents();
@@ -330,37 +357,57 @@ async function fetchData() {
   });
   if (DEBUG) console.log("DEBUG: Total students fetched in fetchData:", students.length);
 
-  // For assigned students (assigned_room !== null && !== "" && !== "None"):
-  assignments = students.filter(s =>
-    s.assigned_room !== null &&
-    s.assigned_room !== "" &&
-    s.assigned_room !== "None"
-  );
+  if (mySeq !== __fsRenderSeq) return; // a realtime update already moved things forward; don't overwrite it with a stale fetch
+   assignments = students.filter(s => isAssignedRoomValue(s.assigned_room));
+   const roomOrder = computeRoomOrderFrom(assignments);
+   currentRoomOrder = roomOrder;
+   unassignedList = sortUnassigned(students.filter(s => isUnassignedRoomValue(s.assigned_room)));
 
-  const roomOrder = computeRoomOrderFrom(assignments);
-  currentRoomOrder = roomOrder;
 
-  // For unassigned students: assigned_room is null, blank, "None", "-", "null", or any whitespace variation
-  unassignedList = students.filter(s => {
-    const room = (s.assigned_room || "").toString().trim().toLowerCase();
-    return room === "" || room === "none" || room === "-" || room === "null";
-  })
-    .sort((a, b) => {
-      const gradeA = a.grade ? a.grade.toString() : '';
-      const gradeB = b.grade ? b.grade.toString() : '';
-      const cmpGrade = gradeA.localeCompare(gradeB, undefined, { numeric: true });
-      if (cmpGrade !== 0) return cmpGrade;
-      const nameA = (a.student_name || [a.firstname, a.lastname].filter(Boolean).join(" ")).toLowerCase();
-      const nameB = (b.student_name || [b.firstname, b.lastname].filter(Boolean).join(" ")).toLowerCase();
-      return nameA.localeCompare(nameB);
-    });
   if (DEBUG) console.log("DEBUG: assignments array:", assignments);
   if (DEBUG) console.log("DEBUG: unassignedList array:", unassignedList);
 
-  if (mySeq !== __fsRenderSeq) return; // stale render, recent fetch already started
   renderRooms(assignments, roomOrder);
   renderUnassigned(unassignedList);
 }
+
+ // Applies one master_roster change directly to the in-memory lists — no
+ // new database call for routine room/gone changes. Returns false only if
+ // the payload shape is unexpected, so the caller can fall back safely.
+ function applyStudentChange(payload) {
+   const oldRow = payload.old || {};
+   const newRow = payload.new || {};
+   const id = newRow.id ?? oldRow.id;
+   if (id == null) return false;
+
+   __fsRenderSeq++; // mark that state has moved forward, so any in-flight fetchData() knows to stand down
+
+   // Remove any existing copy of this student from both lists first
+   assignments = assignments.filter(s => s.id !== id);
+   unassignedList = unassignedList.filter(s => s.id !== id);
+
+   if (payload.eventType !== 'DELETE') {
+     const student = {
+       id: newRow.id,
+       firstname: newRow.firstname,
+       lastname: newRow.lastname,
+       grade: newRow.grade,
+       assigned_room: newRow.assigned_room
+     };
+     if (isAssignedRoomValue(student.assigned_room)) {
+       assignments.push(student);
+     } else if (isUnassignedRoomValue(student.assigned_room)) {
+       unassignedList.push(student);
+     }
+   }
+
+   unassignedList = sortUnassigned(unassignedList);
+   currentRoomOrder = computeRoomOrderFrom(assignments);
+   renderRooms(assignments, currentRoomOrder);
+   renderUnassigned(unassignedList);
+   return true;
+ }
+
 
 // Render room blocks with student lists
 function renderRooms(assignments, roomOrder = []) {
@@ -390,27 +437,14 @@ function renderRooms(assignments, roomOrder = []) {
       // Build room block (same code as before, but using roomName and studentsInRoom)
       const roomBlock = document.createElement("div");
       roomBlock.className = "room-block";
-      roomBlock.style.flex = "1 1 200px";
-      roomBlock.style.boxSizing = "border-box";
-      roomBlock.style.margin = "0.5rem";
-      roomBlock.style.border = "1px solid #ccc";
-      roomBlock.style.borderRadius = "8px";
-      roomBlock.style.padding = "1rem";
-      roomBlock.style.background = "#fff";
 
       const displayRoomName = roomDisplayNameMap[roomName] || roomName;
       const st = styleForRoom(roomName);
 
       const pill = document.createElement('div');
-      pill.style.display = 'inline-flex';
-      pill.style.alignItems = 'center';
-      pill.style.gap = '8px';
-      pill.style.padding = '6px 12px';
-      pill.style.borderRadius = '999px';
+      pill.className = 'room-pill';
       pill.style.backgroundColor = st.bg;
       pill.style.color = st.color;
-      pill.style.fontWeight = '600';
-      pill.style.boxShadow = 'inset 0 -1px 0 rgba(0,0,0,0.08)';
 
       const iconSpan = document.createElement('span');
       iconSpan.textContent = st.icon || '';
@@ -424,7 +458,7 @@ function renderRooms(assignments, roomOrder = []) {
 
       const header = document.createElement('h3');
       header.style.margin = '0 0 0.5rem';
-      header.style.fontSize = '1.2rem';
+      header.style.fontSize = '1.1rem';
       header.appendChild(pill);
 
       roomBlock.appendChild(header);
@@ -436,13 +470,14 @@ function renderRooms(assignments, roomOrder = []) {
       studentsInRoom.forEach(s => {
         const li = document.createElement("li");
         li.style.margin = "0.25rem 0";
-        li.style.fontSize = "1.3rem"; // Adjusted font size for assigned student names
+        li.style.fontSize = "1.1rem"; // Adjusted font size for assigned student names
 
         // Checkbox (if in selection mode)
         const checkbox = document.createElement("input");
         checkbox.type = "checkbox";
         checkbox.className = "student-checkbox";
         checkbox.dataset.id = s.id;
+        checkbox.checked = selectedStudentIds.has(s.id);
         if (!selectionMode) checkbox.classList.add('hidden'); else checkbox.classList.remove('hidden');
         checkbox.style.marginRight = "0.5rem";
         li.appendChild(checkbox);
@@ -471,26 +506,29 @@ function renderRooms(assignments, roomOrder = []) {
 
 // Assignment overlay helpers
 function showAssignOverlay() {
-  const overlay = document.getElementById('assign-overlay');
-  overlay.style.display = 'flex';
-  overlay.style.opacity = '0';
-  setTimeout(() => overlay.style.opacity = '1', 10);
+ const overlay = document.getElementById('assign-overlay');
+ overlay.style.display = 'flex';
+ overlay.style.opacity = '0';
+ setTimeout(() => overlay.style.opacity = '1', 10);
 }
 function hideAssignOverlay() {
-  const overlay = document.getElementById('assign-overlay');
-  overlay.style.opacity = '0';
-  setTimeout(() => overlay.style.display = 'none', 200);
+ const overlay = document.getElementById('assign-overlay');
+ overlay.style.opacity = '0';
+ setTimeout(() => overlay.style.display = 'none', 200);
 }
 
 let selectionMode = false;
-
+ // Tracks which student IDs are checked, independent of the checkboxes
+ // themselves — so a re-render (from anyone else's change) doesn't wipe
+ // out a coordinator's in-progress selection.
+ let selectedStudentIds = new Set();
 let assignments = [];
 let unassignedList = [];
 let currentSearchTerm = "";
 let currentRoomOrder = [];
 
 function escapeRegex(str) {
-  return str.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+ return str.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
 }
 
 async function buildAssignButtons(assignButtonsContainer) {
@@ -514,16 +552,10 @@ async function buildAssignButtons(assignButtonsContainer) {
   roomNames.forEach(roomName => {
     const st = styleForRoom(roomName);
     const btn = document.createElement('button');
-    btn.classList.add('nav-button');
+    btn.classList.remove('nav-button');
+    btn.classList.add('room-choice-btn');
     btn.style.backgroundColor = st.bg;
     btn.style.color = st.color;
-    btn.style.display = 'block';
-    btn.style.margin = '0.25rem auto';
-    btn.style.boxSizing = 'border-box';
-    btn.style.width = '100%';
-    btn.style.padding = '0.75rem';
-    btn.style.fontSize = '1.1rem';
-    btn.style.borderRadius = '6px';
 
     const displayRoomNameBtn = roomDisplayNameMap[roomName] || roomName;
     btn.textContent = st.icon ? `${st.icon} ${displayRoomNameBtn}` : displayRoomNameBtn;
@@ -558,16 +590,9 @@ async function buildAssignButtons(assignButtonsContainer) {
 
   // Append a consistent "Gone" option at the end
   const goneBtn = document.createElement('button');
-  goneBtn.classList.add('nav-button');
+  goneBtn.classList.add('room-choice-btn');
   goneBtn.style.backgroundColor = '#d9d9d9';
   goneBtn.style.color = '#000';
-  goneBtn.style.display = 'block';
-  goneBtn.style.margin = '0.25rem auto';
-  goneBtn.style.boxSizing = 'border-box';
-  goneBtn.style.width = '100%';
-  goneBtn.style.padding = '0.75rem';
-  goneBtn.style.fontSize = '1.1rem';
-  goneBtn.style.borderRadius = '6px';
   goneBtn.textContent = '🚪 Gone';
 
   goneBtn.addEventListener('click', async () => {
@@ -604,19 +629,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const toggleSelectBtn = document.getElementById("toggle-select-button");
   const assignRoomBtn = document.getElementById("assign-room-button");
   const clearAllBtn = document.getElementById("clear-assignments-button");
-
-  // Apply global nav-button styling to controls for ALL relevant buttons
-  [toggleSelectBtn, assignRoomBtn, clearAllBtn].forEach(btn => {
-    if (btn) { // Added a check to ensure the button exists before styling
-      btn.classList.add('nav-button');
-      btn.style.margin = '0 0.5rem';
-      btn.style.padding = '0.75rem 1.5rem';
-      btn.style.fontSize = '1.2rem'; // Default font size for all nav buttons
-      btn.style.borderRadius = '8px';
-      btn.style.cursor = 'pointer';
-      btn.style.boxSizing = 'border-box'; // Ensure padding and border are included in element's total width/height
-    }
-  });
+ 
 
   // Apply specific colors as before (Clear All and Assign Room)
   if (assignRoomBtn) {
@@ -677,6 +690,12 @@ document.addEventListener("DOMContentLoaded", async () => {
   controlsContainer.style.flexWrap = "wrap";
   controlsContainer.style.gap = "0.5rem";
 
+  function syncSelectionFromCheckbox(cb) {
+    const id = parseInt(cb.dataset.id, 10);
+    if (cb.checked) selectedStudentIds.add(id); else selectedStudentIds.delete(id);
+  }
+
+
   // Click-to-toggle selection on list items (no select-all button)
   const unassignedContainer = document.getElementById('unassigned-list');
   if (unassignedContainer) {
@@ -687,6 +706,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       const cb = li.querySelector('.student-checkbox');
       if (!cb) return;
       if (e.target !== cb) cb.checked = !cb.checked;
+      syncSelectionFromCheckbox(cb);
     });
   }
   const roomsListContainer = document.getElementById('rooms-container');
@@ -698,6 +718,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       const cb = li.querySelector('.student-checkbox');
       if (!cb) return;
       if (e.target !== cb) cb.checked = !cb.checked;
+      syncSelectionFromCheckbox(cb);
     });
   }
 
@@ -759,17 +780,18 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 
   // Toggle selection mode for checkboxes
-  if (toggleSelectBtn) {
-    toggleSelectBtn.addEventListener("click", () => {
-      selectionMode = !selectionMode;
-      document.querySelectorAll('.student-checkbox').forEach(cb => {
-        cb.classList.toggle('hidden', !selectionMode);
-        if (!selectionMode) cb.checked = false;  // clear selections when turning off
-      });
-      toggleSelectBtn.textContent = selectionMode ? 'Cancel Selection' : 'Select Students';
-      if (assignRoomBtn) assignRoomBtn.style.display = selectionMode ? 'inline-block' : 'none';
-    });
-  }
+if (toggleSelectBtn) {
+  toggleSelectBtn.addEventListener("click", () => {
+    selectionMode = !selectionMode;
+    if (!selectionMode) selectedStudentIds.clear();
+    document.querySelectorAll('.student-checkbox').forEach(cb => {
+      cb.classList.toggle('hidden', !selectionMode);
+      if (!selectionMode) cb.checked = false;
+    });
+    toggleSelectBtn.textContent = selectionMode ? 'Cancel Selection' : 'Select Students';
+    if (assignRoomBtn) assignRoomBtn.style.display = selectionMode ? 'inline-block' : 'none';
+  });
+}
 
   // Add event listener for overlay cancel button
   const assignOverlayCancelBtn = document.getElementById('assign-overlay-cancel');
@@ -895,7 +917,7 @@ function renderUnassigned(list) {
 
     const title = fsGradeTitle(grade, group.length);
     const h = document.createElement('h3');
-    h.className = 'grade-header';
+    h.className = 'grade-title';
     h.textContent = title;
     section.appendChild(h);
 
@@ -910,6 +932,7 @@ function renderUnassigned(list) {
       cb.type = 'checkbox';
       cb.className = 'student-checkbox';
       cb.dataset.id = s.id;
+      cb.checked = selectedStudentIds.has(s.id);
       if (!selectionMode) cb.classList.add('hidden'); // only visible in selection mode
       li.appendChild(cb);
 

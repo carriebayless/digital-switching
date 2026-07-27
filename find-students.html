@@ -11,39 +11,37 @@
 </head>
 <body>
   <!-- Supervisor navigation bar -->
-  <div id="nav-bar" class="top-nav" style="display:flex; align-items:center; gap:8px; padding:8px 12px; background:#f5f5f5; border-bottom:1px solid #ddd;">
-  <button onclick="window.location.href='index.html'" class="nav-button">Student Screen</button>
-  <button onclick="window.location.href='supervisor.html'" class="nav-button">Supervisor Dashboard</button>
-  <button onclick="window.location.href='roster-manager.html'" class="nav-button">Roster Manager</button>
-
-  <!-- Logout button container, aligns right -->
-  <div id="supervisor-logout-container" style="margin-left:auto;"></div>
+ <header id="nav-bar" class="app-nav-bar">
+   <nav class="app-nav" aria-label="Primary">
+     <a href="index.html" class="app-nav__link">Student Screen</a>
+     <a href="supervisor.html" class="app-nav__link">Supervisor Dashboard</a>
+     <a href="find-students.html" class="app-nav__link is-active" aria-current="page">Find Students</a>
+     <a href="roster-manager.html" class="app-nav__link">Roster Manager</a>
+   </nav>
+   <div id="supervisor-logout-container" class="app-nav-bar__actions"></div>
+ </header>
 </div>
 
 
   <main style="padding:1rem; max-width: 960px; margin: auto;">
 
-    <div style="display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin-bottom: 1rem;">
-      <input
-        type="search"
-        id="search-input"
-        placeholder="Search by name"
-        style="flex: 1; padding: 0.5rem 1rem; font-size: 1rem; border: 1px solid #ccc; border-radius: 4px;"
-      />
-      <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: center;"> <button id="toggle-select-button" class="nav-button">Select Students</button>
-        <button id="assign-room-button" class="nav-button" style="background-color: #4CAF50; color: #fff;">Assign Room</button>
-        <button id="clear-assignments-button" class="nav-button" style="background-color: #e53935; color: #fff;">Clear Rooms</button>
+    <div class="fs-toolbar">
+      <input type="search" id="search-input" placeholder="Search by name" class="fs-search" />
+      <div class="fs-toolbar__actions">
+        <button id="toggle-select-button" class="btn btn-secondary">Select Students</button>
+        <button id="assign-room-button" class="btn btn-success">Assign Room</button>
+        <button id="clear-assignments-button" class="btn btn-danger">Clear Rooms</button>
       </div>
     </div>
 
     <!-- Rooms container -->
-    <div id="rooms-container" style="display: flex; flex-wrap: wrap; gap:1rem; justify-content: center;">
+    <div id="rooms-container" class="rooms-grid">
       <!-- Dynamically injected room blocks go here -->
     </div>
 
 <!-- Unassigned Students Section -->
-<div id="unassigned-container" style="max-width: 960px; margin: 2rem auto;">
-  <h2 style="text-align: center; margin-bottom: 1rem;">Unassigned Students</h2>
+ <div id="unassigned-container" class="unassigned-card">
+   <h2 class="unassigned-card__title">Unassigned Students</h2>
   <ul id="unassigned-list" style="list-style: none; padding: 0 1rem; margin: 0;">
     <!-- Populated by JavaScript -->
   </ul>
@@ -51,17 +49,13 @@
 
     <!-- Room Assignment Overlay -->
     <div id="assign-overlay" class="overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 1000;">
-      <div id="assign-room-selection" class="modal" style="background: #fff; border-radius: 8px; padding: 1rem; max-width: 400px; width: 90%; box-shadow: 0 4px 12px rgba(0,0,0,0.15); text-align: center;">
+      <div id="assign-room-selection" class="fs-modal">
         <h2>Select Room</h2>
         <div id="assign-room-buttons" style="display: flex; flex-direction: column; gap: 0.5rem; margin: 1rem 0;"></div>
-        <button id="assign-overlay-cancel" style="padding: 0.5rem 1rem; font-size: 1rem; border: none; background-color: #e0e0e0; border-radius: 4px; cursor: pointer;">
-          Cancel
-        </button>
+        <button id="assign-overlay-cancel" class="btn btn-secondary">Cancel</button>
       </div>
     </div>
   </main>
-
-</main>
 
   <!-- Supabase and script with explicit load/error diagnostics and cache-buster v=4 -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.42.3/dist/umd/supabase.min.js" defer onload="console.log('Supabase JS loaded')" onerror="console.error('Failed to load Supabase JS')"></script>

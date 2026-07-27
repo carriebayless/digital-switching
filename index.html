@@ -30,24 +30,24 @@
     <div id="room-overlay-card" class="modal" style="width:min(720px,92vw); max-height:80vh; overflow:auto;">
       <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
         <h2 id="room-overlay-title" style="margin:0; font-size:1.25rem;">Choose a room</h2>
-        <button id="room-overlay-close" class="nav-button">Close</button>
+        <button id="room-overlay-close" class="btn btn-secondary">Close</button>
       </div>
       <div id="room-overlay-list"></div>
-      <div id="room-overlay-empty" style="display:none; color:#666; font-style:italic; margin-top:8px;">No rooms available right now.</div>
+      <div id="room-overlay-empty" style="display:none; color:var(--muted); font-style:italic; margin-top:8px;">No rooms available right now.</div>
     </div>
   </div>
 
   <!-- Device status (can be hidden later in CSS) -->
-  <div id="device-status" style="position:fixed; bottom:10px; right:10px; font-size:.85rem; color:#555; background:#f6f6f6; border:1px solid #ddd; padding:6px 10px; border-radius:8px; z-index:9999; display:flex; gap:.5rem; align-items:center;">
+  <div id="device-status" style="position:fixed; bottom:10px; right:10px; font-size:.85rem; color:var(--muted); background:var(--surface); border:1px solid var(--border); padding:6px 10px; border-radius:var(--radius-sm); box-shadow:var(--shadow-1); z-index:9999; display:flex; gap:.5rem; align-items:center;">    
     <span id="device-name">Device</span> • <span id="device-filter">No list</span>
-    <button id="device-info-btn" title="Device details" style="margin-left:.25rem; border:1px solid #ccc; background:#fff; border-radius:50%; width:20px; height:20px; line-height:18px; font-size:.75rem; cursor:pointer;">i</button>
+    <button id="device-info-btn" title="Device details" style="margin-left:.25rem; border:1px solid var(--border); background:var(--surface); border-radius:50%; width:20px; height:20px; line-height:18px; font-size:.75rem; cursor:pointer;">i</button>
   </div>
 
   <div id="device-info-dialog" class="overlay">
     <div class="modal" style="width:min(92vw,460px);">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-        <h3 style="margin:0; color:#00047e;">This iPad</h3>
-        <button id="device-info-close" style="border:1px solid #ccc; background:#f6f6f6; border-radius:6px; padding:4px 8px; cursor:pointer;">Close</button>
+       <h3 style="margin:0; color:var(--brand);">This iPad</h3>
+       <button id="device-info-close" class="btn btn-secondary">Close</button>
       </div>
       <div style="font-size:.95rem; color:#333; display:grid; grid-template-columns:140px 1fr auto; row-gap:8px; column-gap:8px; align-items:center;">
         <div>Device name</div>
@@ -56,7 +56,7 @@
 
         <div>Device key</div>
         <div id="info-device-key" style="font-family:monospace; font-size:.9rem;">—</div>
-        <button id="copy-device-key" style="border:1px solid #ccc; background:#fff; border-radius:6px; padding:2px 6px; cursor:pointer;">Copy</button>
+        <button id="copy-device-key" class="btn btn-secondary" style="padding:4px 10px; font-size:0.85rem;">Copy</button>
 
         <div>Roster column</div>
         <div id="info-filter-col">—</div>
