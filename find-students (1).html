@@ -1,0 +1,131 @@
+<!-- push trigger: 8/5 5:30 PM -->
+ 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Find Students</title>
+  <!-- Link to existing stylesheet -->
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- Supervisor navigation bar -->
+ <header id="nav-bar" class="app-nav-bar">
+   <input type="checkbox" id="nav-toggle" class="nav-toggle-checkbox" />
+   <label for="nav-toggle" class="nav-toggle-label" aria-label="Toggle navigation menu">☰</label>
+   <nav class="app-nav" aria-label="Primary">
+     <a href="index.html" class="app-nav__link">Student Screen</a>
+     <a href="supervisor.html" class="app-nav__link">Supervisor Dashboard</a>
+     <a href="find-students.html" class="app-nav__link is-active" aria-current="page">Find Students</a>
+     <a href="room-log.html" class="app-nav__link">Room Log</a>
+     <a href="roster-manager.html" class="app-nav__link">Roster Manager</a>
+   </nav>
+   <div id="supervisor-logout-container" class="app-nav-bar__actions"></div>
+ </header>
+</div>
+
+  <main style="padding:1rem; max-width: 1600px; margin: 0 auto; box-sizing: border-box;">
+
+    <div class="fs-toolbar">
+      <input type="search" id="search-input" placeholder="Search by name" class="fs-search" />
+      <div class="fs-toolbar__actions">
+        <button id="sort-toggle-button" class="btn btn-secondary">Sort: A-Z</button>
+        <button id="toggle-select-button" class="btn btn-secondary">Select Students</button>
+        <button id="assign-room-button" class="btn btn-success">Assign Room</button>
+        <button id="clear-assignments-button" class="btn btn-danger">Clear Rooms</button>
+      </div>
+    </div>
+
+    <!-- Rooms container -->
+    <div id="rooms-container" class="rooms-grid">
+      <!-- Dynamically injected room blocks go here -->
+    </div>
+
+<!-- Restrictions Section -->
+<div id="restrictions-container" class="unassigned-card">
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:0.5rem;">
+    <h2 class="unassigned-card__title" style="margin:0;">Restrictions</h2>
+    <button id="add-restriction-button" class="btn btn-secondary">+ Add Restriction</button>
+  </div>
+  <ul id="restrictions-list" style="list-style: none; padding: 0; margin: 0;"></ul>
+  <p id="restrictions-empty-message" style="display:none; color:#666; margin:0;">No active restrictions.</p>
+</div>
+
+<!-- Unassigned Students Section -->
+
+<!-- Unassigned Students Section -->
+ <div id="unassigned-container" class="unassigned-card">
+   <h2 class="unassigned-card__title">Unassigned Students</h2>
+  <ul id="unassigned-list" style="list-style: none; padding: 0 1rem; margin: 0;">
+    <!-- Populated by JavaScript -->
+  </ul>
+</div>
+
+    <!-- Room Assignment Overlay -->
+    <div id="assign-overlay" class="overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 1000;">
+      <div id="assign-room-selection" class="fs-modal">
+        <h2>Select Room</h2>
+        <div id="assign-room-buttons" style="display: flex; flex-direction: column; gap: 0.5rem; margin: 1rem 0;"></div>
+        <button id="assign-overlay-cancel" class="btn btn-secondary">Cancel</button>
+      </div>
+    </div>
+
+    <!-- Add Restriction Overlay -->
+    <div id="restriction-overlay" class="overlay" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.5); align-items:center; justify-content:center; z-index:1000;">
+      <div id="restriction-modal" class="fs-modal" style="max-width:480px; text-align:left;">
+        <h2 id="restriction-modal-title" style="text-align:center;">Add Restriction</h2>
+
+        <label style="display:block; margin-bottom:0.75rem;">
+          Student
+          <select id="restriction-student-select" class="filter-select ds-select" style="width:100%; margin-top:0.25rem;"></select>
+        </label>
+
+        <div style="margin-bottom:0.75rem;">
+          <label style="display:block;">
+            <input type="radio" name="restriction-target-type" value="rooms" checked /> Restrict from room(s)
+          </label>
+          <label style="display:block;">
+            <input type="radio" name="restriction-target-type" value="student" /> Restrict from another student
+          </label>
+        </div>
+
+        <div id="restriction-rooms-picker">
+          <div id="restriction-room-checkboxes" style="display:flex; flex-wrap:wrap; gap:0.5rem; margin-bottom:0.75rem;"></div>
+          <select id="restriction-edit-room-select" class="filter-select ds-select" style="width:100%; margin-bottom:0.75rem; display:none;"></select>
+        </div>
+
+        <div id="restriction-student-picker" style="display:none; margin-bottom:0.75rem;">
+          <select id="restriction-other-student-select" class="filter-select ds-select" style="width:100%;"></select>
+        </div>
+
+        <label style="display:block; margin-bottom:1rem;">
+          Duration
+          <select id="restriction-duration-select" class="filter-select ds-select" style="width:100%; margin-top:0.25rem;">
+            <option value="15min">15 minutes</option>
+            <option value="30min">30 minutes</option>
+            <option value="rest_of_day">Rest of today</option>
+            <option value="rest_of_week">Rest of this week</option>
+            <option value="specific_time">Specific time today…</option>
+          </select>
+        </label>
+
+        <div id="restriction-time-picker" style="display:none; margin-bottom:1rem;">
+          <input type="time" id="restriction-specific-time" class="filter-select ds-select" style="width:100%;" />
+        </div>
+
+        <div style="display:flex; gap:0.5rem; justify-content:flex-end;">
+          <button id="restriction-cancel-btn" class="btn btn-secondary">Cancel</button>
+          <button id="restriction-save-btn" class="btn btn-success">Save Restriction</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Supabase and script with explicit load/error diagnostics and cache-buster v=4 -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.42.3/dist/umd/supabase.min.js" defer onload="console.log('Supabase JS loaded')" onerror="console.error('Failed to load Supabase JS')"></script>
+  <script src="./find-students.js?v=4" defer onload="console.log('find-students.js tag loaded (relative)')" onerror="console.error('Failed to load find-students.js (relative)')"></script>
+  <script>
+  </script>
+</body>
+</html>

@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Room Log</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header id="nav-bar" class="app-nav-bar">
+   <input type="checkbox" id="nav-toggle" class="nav-toggle-checkbox" />
+   <label for="nav-toggle" class="nav-toggle-label" aria-label="Toggle navigation menu">☰</label>
+   <nav class="app-nav" aria-label="Primary">
+      <a href="index.html" class="app-nav__link">Student Screen</a>
+      <a href="supervisor.html" class="app-nav__link">Supervisor Dashboard</a>
+      <a href="find-students.html" class="app-nav__link">Find Students</a>
+      <a href="room-log.html" class="app-nav__link is-active" aria-current="page">Room Log</a>
+      <a href="roster-manager.html" class="app-nav__link">Roster Manager</a>
+    </nav>
+    <div id="supervisor-logout-container" class="app-nav-bar__actions"></div>
+  </header>
+
+  <main style="padding:1rem; max-width: 1600px; margin: 0 auto; box-sizing: border-box;">
+
+    <div class="fs-toolbar">
+      <input type="search" id="log-search-input" placeholder="Search by name" class="fs-search" />
+      <div class="fs-toolbar__actions">
+        <select id="log-room-filter" class="filter-select ds-select">
+          <option value="">All Rooms</option>
+        </select>
+      </div>
+    </div>
+
+  <p style="color:#666; font-size:0.95rem; margin-top:0;">Showing the last hour of room changes.</p>
+  <div id="log-site-badge" style="display:inline-block; background:#eef2fb; color:#eef2fb; padding:0.4rem 0.9rem; border-radius:999px; font-weight:600; margin-bottom:0.75rem;"></div>
+
+
+    <ul id="log-list" style="list-style:none; padding:0; margin:0;"></ul>
+    <p id="log-empty-message" style="display:none; color:#666;">No room changes in the last hour.</p>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.42.3/dist/umd/supabase.min.js" defer></script>
+  <script src="./room-log.js?v=1" defer></script>
+</body>
+</html>
